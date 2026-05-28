@@ -27,8 +27,11 @@ export function MainLayout() {
     [has],
   );
 
+  // 选最长前缀匹配,避免 /billing 抢走 /billing/credit-ledgers 的高亮。
   const selectedKey =
-    menuConfig.find((m) => location.pathname.startsWith(m.path))?.path ?? "";
+    menuConfig
+      .filter((m) => location.pathname.startsWith(m.path))
+      .sort((a, b) => b.path.length - a.path.length)[0]?.path ?? "";
 
   const roleNames = session?.roles.map((r) => r.name).join("、") || "后台用户";
 

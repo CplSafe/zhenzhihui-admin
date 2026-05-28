@@ -1,0 +1,156 @@
+// 业务领域类型,对应后端 internal/domain/models.go 的 JSON 序列化形态。
+// 仅声明 admin 只读列表/详情会用到的字段。
+
+// 列表统一信封,对应 admin.ListPage。
+export interface ListPage<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+// 分页/筛选请求通用参数。
+export interface PageParams {
+  limit?: number;
+  offset?: number;
+}
+
+// 所有领域实体共享 id + 创建时间;大多数也有更新时间。
+interface Entity {
+  id: number;
+  created_at: string;
+}
+
+interface MutableEntity extends Entity {
+  updated_at: string;
+}
+
+// workspace 维度的资源(任务、资产、订单、账单等)。
+interface WorkspaceScoped extends MutableEntity {
+  workspace_id: number;
+  user_id: number;
+}
+
+export type WorkspaceType = "personal" | "team" | "enterprise";
+export type WorkspaceStatus = "enabled" | "disabled";
+export type AssetType = "image" | "video" | "audio" | "prompt";
+export type AssetStatus = "pending" | "active" | "rejected" | "deleted";
+export type PaymentOrderType =
+  | "credit_recharge"
+  | "subscription_initial"
+  | "subscription_renewal";
+// 后端会扩展 kind 值,这里允许已知字面量之外的字符串。
+export type CreditLedgerKind =
+  | "freeze"
+  | "settle"
+  | "release"
+  | "credit"
+  | (string & {});
+
+export interface User extends MutableEntity {
+  deepauth_user_id: string;
+  mobile?: string;
+  nickname?: string;
+  email?: string;
+  email_verified_at?: string;
+}
+
+export interface Workspace extends MutableEntity {
+  type: WorkspaceType;
+  name: string;
+  owner_user_id: number;
+  status: WorkspaceStatus;
+}
+
+export interface AITask extends WorkspaceScoped {
+  model_version_id: number;
+  operation_code: string;
+  idempotency_key?: string;
+  provider: string;
+  provider_task_id?: string;
+  status: string;
+  prompt?: string;
+  estimated_cost: number;
+  actual_cost: number;
+  error_message?: string;
+  // 仅详情接口 GET /admin/ai/tasks/:id 返回的大字段。
+  request_json?: unknown;
+  result_json?: unknown;
+}
+
+export interface Asset extends WorkspaceScoped {
+  task_id?: number;
+  type: AssetType;
+  source: string;
+  name: string;
+  bucket?: string;
+  object_key?: string;
+  mime_type?: string;
+  size_bytes?: number;
+  hash?: string;
+  storage_etag?: string;
+  prompt?: string;
+  status: AssetStatus;
+}
+
+export interface PaymentOrder extends WorkspaceScoped {
+  credit_package_id?: number;
+  type: PaymentOrderType;
+  amount_cents: number;
+  credits: number;
+  status: string;
+  provider: string;
+  provider_trade_no?: string;
+  business_key?: string;
+}
+
+export interface CreditLedger extends Entity {
+  workspace_id: number;
+  user_id: number;
+  kind: CreditLedgerKind;
+  amount: number;
+  balance_after: number;
+  frozen_after: number;
+  reason: string;
+  idempotency_key?: string;
+}
+
+export interface Wallet extends MutableEntity {
+  workspace_id: number;
+  balance: number;
+  frozen: number;
+}
+
+export interface Subscription extends WorkspaceScoped {
+  plan_id: number;
+  alipay_agreement_no?: string;
+  status: string;
+  current_period_end: string;
+  canceled_at?: string;
+}
+
+export interface AdminAuditLog extends Entity {
+  actor_admin_user_id: number;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  // 后端 payload 字段名以实际为准,统一作为可选 JSON 展示。
+  payload_json?: unknown;
+}
+
+// 运营概览,对应 admin.Overview。金额为分(cents),展示时转元。
+export interface Overview {
+  users_total: number;
+  users_new: number;
+  workspaces_total: number;
+  workspaces_new: number;
+  ai_tasks_total: number;
+  ai_tasks_succeeded: number;
+  ai_tasks_failed: number;
+  ai_tasks_processing: number;
+  credits_consumed: number;
+  recharge_amount_cents: number;
+  active_subscriptions: number;
+  assets_total: number;
+  assets_size_bytes: number;
+}

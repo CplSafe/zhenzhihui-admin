@@ -1,23 +1,44 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { AuthGuard } from '@/components/AuthGuard'
 import { RequirePermission } from '@/components/RequirePermission'
 import { MainLayout } from '@/layouts/MainLayout'
 import { OverviewPage } from '@/pages/OverviewPage'
+import { UsersPage } from '@/pages/UsersPage'
+import { WorkspacesPage } from '@/pages/WorkspacesPage'
+import { AITasksPage } from '@/pages/AITasksPage'
+import { AssetsPage } from '@/pages/AssetsPage'
+import { PaymentOrdersPage } from '@/pages/PaymentOrdersPage'
+import { CreditLedgersPage } from '@/pages/CreditLedgersPage'
+import { WalletsPage } from '@/pages/WalletsPage'
+import { SubscriptionsPage } from '@/pages/SubscriptionsPage'
+import { AuditLogsPage } from '@/pages/AuditLogsPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { menuConfig } from '@/router/menuConfig'
 
-// 把菜单配置展开为受权限保护的子路由。
-// overview 用真实占位页,其余先用通用占位页,待按 MD 规格逐个替换。
-const childRoutes = menuConfig.map((m) => {
-  const element =
-    m.key === 'overview' ? <OverviewPage /> : <PlaceholderPage title={m.label} />
-  return {
-    path: m.path.replace(/^\//, ''),
-    element: (
-      <RequirePermission permission={m.permission}>{element}</RequirePermission>
-    ),
-  }
-})
+// 各菜单 key 对应的页面组件。models / admin-users 待写接口页面后补,先用占位。
+const pageByKey: Record<string, ReactNode> = {
+  overview: <OverviewPage />,
+  users: <UsersPage />,
+  workspaces: <WorkspacesPage />,
+  'ai-tasks': <AITasksPage />,
+  assets: <AssetsPage />,
+  billing: <PaymentOrdersPage />,
+  'credit-ledgers': <CreditLedgersPage />,
+  wallets: <WalletsPage />,
+  subscriptions: <SubscriptionsPage />,
+  'audit-logs': <AuditLogsPage />,
+}
+
+// 路由直接由 menuConfig 派生:path 去掉前导 /,权限用 RequirePermission 包一层。
+const childRoutes = menuConfig.map((m) => ({
+  path: m.path.replace(/^\//, ''),
+  element: (
+    <RequirePermission permission={m.permission}>
+      {pageByKey[m.key] ?? <PlaceholderPage title={m.label} />}
+    </RequirePermission>
+  ),
+}))
 
 export const router = createBrowserRouter([
   {
