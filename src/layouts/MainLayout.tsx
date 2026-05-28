@@ -1,22 +1,22 @@
-import { useMemo } from 'react'
-import { Layout, Menu, Dropdown, Avatar, Typography, theme } from 'antd'
-import { UserOutlined, LogoutOutlined } from '@ant-design/icons'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useAdminSession } from '@/hooks/useAdminSession'
-import { usePermission } from '@/hooks/usePermission'
-import { redirectToLogin } from '@/api/client'
-import { menuConfig } from '@/router/menuConfig'
+import { useMemo } from "react";
+import { Layout, Menu, Dropdown, Avatar, Typography, theme } from "antd";
+import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAdminSession } from "@/hooks/useAdminSession";
+import { usePermission } from "@/hooks/usePermission";
+import { redirectToLogin } from "@/api/client";
+import { menuConfig } from "@/router/menuConfig";
 
-const { Sider, Header, Content } = Layout
+const { Sider, Header, Content } = Layout;
 
 export function MainLayout() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { data: session } = useAdminSession()
-  const { has } = usePermission()
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { data: session } = useAdminSession();
+  const { has } = usePermission();
   const {
     token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken()
+  } = theme.useToken();
 
   // 仅渲染当前用户有权限的菜单项。
   const menuItems = useMemo(
@@ -25,28 +25,31 @@ export function MainLayout() {
         .filter((m) => !m.permission || has(m.permission))
         .map((m) => ({ key: m.path, icon: m.icon, label: m.label })),
     [has],
-  )
+  );
 
   const selectedKey =
-    menuConfig.find((m) => location.pathname.startsWith(m.path))?.path ?? ''
+    menuConfig.find((m) => location.pathname.startsWith(m.path))?.path ?? "";
 
-  const roleNames = session?.roles.map((r) => r.name).join('、') || '后台用户'
+  const roleNames = session?.roles.map((r) => r.name).join("、") || "后台用户";
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: "100vh" }}>
       <Sider breakpoint="lg" collapsedWidth="0" theme="dark">
         <div
           style={{
             height: 56,
             margin: 16,
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: 16,
-            display: 'flex',
-            alignItems: 'center',
+            color: "#fff",
+            fontWeight: 300,
+            fontSize: 20,
+            letterSpacing: "-0.4px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
           }}
         >
-          帧智绘 · 后台
+          帧智绘
+          <span style={{ color: "#665efd", fontWeight: 400 }}>后台</span>
         </div>
         <Menu
           theme="dark"
@@ -59,30 +62,37 @@ export function MainLayout() {
       <Layout>
         <Header
           style={{
-            padding: '0 24px',
+            padding: "0 24px",
             background: colorBgContainer,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
           }}
         >
           <Dropdown
             menu={{
               items: [
                 {
-                  key: 'logout',
+                  key: "logout",
                   icon: <LogoutOutlined />,
-                  label: '切换账号',
+                  label: "切换账号",
                   onClick: redirectToLogin,
                 },
               ],
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                gap: 8,
+              }}
+            >
               <Avatar icon={<UserOutlined />} />
               <div style={{ lineHeight: 1.2 }}>
                 <Typography.Text strong>
-                  {session?.admin_user.deep_auth_user_id ?? '未知'}
+                  {session?.admin_user.deep_auth_user_id ?? "未知"}
                 </Typography.Text>
                 <div>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -97,7 +107,7 @@ export function MainLayout() {
           <div
             style={{
               padding: 24,
-              minHeight: '100%',
+              minHeight: "100%",
               background: colorBgContainer,
               borderRadius: borderRadiusLG,
             }}
@@ -107,5 +117,5 @@ export function MainLayout() {
         </Content>
       </Layout>
     </Layout>
-  )
+  );
 }

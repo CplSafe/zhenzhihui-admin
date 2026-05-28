@@ -1,0 +1,56 @@
+/* Stripe 风格设计 token,提炼自根目录 DESIGN.md。
+   颜色/圆角/间距与 AntD theme(src/theme/index.ts)保持同源。 */
+:root {
+  /* 品牌与强调 */
+  --color-primary: #533afd;
+  --color-primary-deep: #4434d4;
+  --color-primary-press: #2e2b8c;
+  --color-primary-soft: #665efd;
+  --color-primary-subdued: #b9b9f9;
+  --color-brand-dark-900: #1c1e54;
+
+  /* 文本(深 navy,非纯黑) */
+  --color-ink: #0d253d;
+  --color-ink-secondary: #273951;
+  --color-ink-mute: #64748d;
+  --color-on-primary: #ffffff;
+
+  /* 表面 */
+  --color-canvas: #ffffff;
+  --color-canvas-soft: #f6f9fc;
+  --color-canvas-cream: #f5e9d4;
+  --color-hairline: #e3e8ee;
+  --color-hairline-input: #a8c3de;
+
+  /* 语义(图表/状态点,源自 gradient 强调色) */
+  --color-ruby: #ea2261;
+  --color-magenta: #f96bee;
+
+  /* 圆角 */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  /* 间距(8px 基,带 2/4/12 细分) */
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-huge: 64px;
+
+  /* 阴影(Stripe 用蓝调阴影 rgba(0,55,112,*)) */
+  --shadow-1: rgba(0, 55, 112, 0.08) 0 1px 3px;
+  --shadow-2:
+    rgba(0, 55, 112, 0.08) 0 8px 24px, rgba(0, 55, 112, 0.04) 0 2px 6px;
+
+  /* 字体:Sohne 不可用,Inter w300 + ss01 为最近开源替身 */
+  --font-sans:
+    'Inter Variable', 'Inter', system-ui, -apple-system, 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+}
