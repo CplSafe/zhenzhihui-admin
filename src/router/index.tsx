@@ -15,6 +15,9 @@ import { SubscriptionsPage } from "@/pages/SubscriptionsPage";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { ModelsPage } from "@/pages/ModelsPage";
 import { AdminUsersPage } from "@/pages/AdminUsersPage";
+import { PlansPage } from "@/pages/PlansPage";
+import { CreditPackagesPage } from "@/pages/CreditPackagesPage";
+import { ProvidersPage } from "@/pages/ProvidersPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { menuConfig } from "@/router/menuConfig";
@@ -30,7 +33,10 @@ const pageByKey: Record<string, ReactNode> = {
   "credit-ledgers": <CreditLedgersPage />,
   wallets: <WalletsPage />,
   subscriptions: <SubscriptionsPage />,
+  plans: <PlansPage />,
+  "credit-packages": <CreditPackagesPage />,
   models: <ModelsPage />,
+  providers: <ProvidersPage />,
   "admin-users": <AdminUsersPage />,
   "audit-logs": <AuditLogsPage />,
 };

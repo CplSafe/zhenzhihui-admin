@@ -9,6 +9,9 @@ import {
   ApiOutlined,
   SafetyCertificateOutlined,
   FileSearchOutlined,
+  TagsOutlined,
+  GiftOutlined,
+  KeyOutlined,
 } from "@ant-design/icons";
 import type { ReactNode } from "react";
 import { Permission, type PermissionCode } from "@/types/admin";
@@ -88,11 +91,32 @@ export const menuConfig: MenuItemConfig[] = [
     permission: Permission.SUBSCRIPTIONS_READ,
   },
   {
+    key: "plans",
+    path: "/plans",
+    label: "套餐管理",
+    icon: <TagsOutlined />,
+    permission: Permission.PLANS_READ,
+  },
+  {
+    key: "credit-packages",
+    path: "/credit-packages",
+    label: "积分包",
+    icon: <GiftOutlined />,
+    permission: Permission.CREDIT_PACKAGES_READ,
+  },
+  {
     key: "models",
     path: "/models",
     label: "模型配置",
     icon: <ApiOutlined />,
     permission: Permission.MODELS_READ,
+  },
+  {
+    key: "providers",
+    path: "/providers",
+    label: "Provider 配置",
+    icon: <KeyOutlined />,
+    permission: Permission.SETTINGS_READ,
   },
   {
     key: "admin-users",

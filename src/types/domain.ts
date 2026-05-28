@@ -148,6 +148,37 @@ export interface AdminAuditLog extends Entity {
   user_agent?: string;
 }
 
+// 套餐,对应 domain.Plan。entitlements_json 含 models/concurrency/system_only/
+// is_trial_grant/trial_days,前端用 JSON 编辑器读写。
+export interface Plan extends MutableEntity {
+  code: string;
+  name: string;
+  period: "month" | "year";
+  price_cents: number;
+  base_credits: number;
+  entitlements_json?: unknown;
+  status: "enabled" | "disabled";
+}
+
+// 积分包,对应 domain.CreditPackage。
+export interface CreditPackage extends MutableEntity {
+  code: string;
+  name: string;
+  amount_cents: number;
+  credits: number;
+  status: "enabled" | "disabled";
+}
+
+// provider 凭证脱敏视图,对应 settings.ProviderConfigView。
+// 永不含明文/密文 key,只有掩码 + 是否已配置。
+export interface ProviderConfigView {
+  provider: string;
+  base_url: string;
+  timeout_seconds: number;
+  api_key_configured: boolean;
+  api_key_masked?: string;
+}
+
 // 后台管理员,对应 domain.AdminUser。
 export interface AdminUser extends MutableEntity {
   deepauth_user_id: string;
