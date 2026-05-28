@@ -57,6 +57,7 @@ export const Permission = {
   CREDIT_PACKAGES_WRITE: "admin.credit_packages.write",
   SETTINGS_READ: "admin.settings.read",
   SETTINGS_WRITE: "admin.settings.write",
+  GRANTS_WRITE: "admin.grants.write",
 } as const;
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission];

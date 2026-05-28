@@ -148,6 +148,27 @@ export interface AdminAuditLog extends Entity {
   user_agent?: string;
 }
 
+// 用户详情里某 workspace 的聚合视图,对应 admin.UserWorkspaceItem。
+export interface UserWorkspaceItem {
+  workspace: Workspace;
+  role: string;
+  wallet?: Wallet;
+  subscription?: Subscription;
+}
+
+// 用户详情,对应 admin.AdminUserDetail(用户 + 其 workspace 列表带钱包/订阅)。
+export interface AdminUserDetail {
+  user: User;
+  workspace_count: number;
+  workspaces: UserWorkspaceItem[];
+}
+
+// 授予套餐结果,对应 admin.GrantPlanResult。
+export interface GrantPlanResult {
+  subscription: Subscription;
+  credits_granted: number;
+}
+
 // 套餐,对应 domain.Plan。entitlements_json 含 models/concurrency/system_only/
 // is_trial_grant/trial_days,前端用 JSON 编辑器读写。
 export interface Plan extends MutableEntity {

@@ -3,6 +3,7 @@ import type {
   AITask,
   Asset,
   AdminAuditLog,
+  AdminUserDetail,
   AdminWalletItem,
   CreditLedger,
   ListPage,
@@ -43,7 +44,8 @@ export interface UserListParams extends Paginated {
   created_to?: string;
 }
 export const listUsers = listGet<User, UserListParams>("/admin/users");
-export const getUser = (id: number) => http.get<unknown>(`/admin/users/${id}`);
+export const getUser = (id: number) =>
+  http.get<AdminUserDetail>(`/admin/users/${id}`);
 
 export interface WorkspaceListParams extends Paginated {
   type?: string;
