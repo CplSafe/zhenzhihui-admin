@@ -51,7 +51,7 @@ export function MainLayout() {
             gap: 8,
           }}
         >
-          帧智绘
+          帧智汇
           <span style={{ color: "#665efd", fontWeight: 400 }}>后台</span>
         </div>
         <Menu

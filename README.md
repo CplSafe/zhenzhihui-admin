@@ -1,6 +1,6 @@
 # zhenzhihui-admin
 
-帧智绘(zhenzhihui)运营后台前端。对接 Go 业务后端 `/api/v1/admin/*`。
+帧智汇(zhenzhihui)运营后台前端。对接 Go 业务后端 `/api/v1/admin/*`。
 
 ## 技术栈
 

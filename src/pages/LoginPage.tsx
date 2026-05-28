@@ -53,7 +53,7 @@ export function LoginPage() {
             level={3}
             style={{ margin: 0, fontWeight: 300, letterSpacing: '-0.4px' }}
           >
-            帧智绘 <span style={{ color: '#665efd' }}>后台</span>
+            帧智汇 <span style={{ color: '#665efd' }}>后台</span>
           </Typography.Title>
           <Typography.Text type="secondary">运营管理后台 · 请登录</Typography.Text>
         </div>

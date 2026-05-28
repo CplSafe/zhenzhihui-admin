@@ -121,6 +121,13 @@ export interface Wallet extends MutableEntity {
   frozen: number;
 }
 
+// 钱包列表项,对应 admin.AdminWalletItem(联 workspace)。
+// 后端 ListWallets 返回的是嵌套结构,不是扁平 Wallet。
+export interface AdminWalletItem {
+  wallet: Wallet;
+  workspace: Workspace;
+}
+
 export interface Subscription extends WorkspaceScoped {
   plan_id: number;
   alipay_agreement_no?: string;

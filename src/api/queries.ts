@@ -3,13 +3,13 @@ import type {
   AITask,
   Asset,
   AdminAuditLog,
+  AdminWalletItem,
   CreditLedger,
   ListPage,
   Overview,
   PaymentOrder,
   Subscription,
   User,
-  Wallet,
   Workspace,
 } from "@/types/domain";
 
@@ -102,7 +102,7 @@ export const listCreditLedgers = listGet<CreditLedger, CreditLedgerListParams>(
 export interface WalletListParams extends Paginated {
   keyword?: string;
 }
-export const listWallets = listGet<Wallet, WalletListParams>(
+export const listWallets = listGet<AdminWalletItem, WalletListParams>(
   "/admin/billing/wallets",
 );
 
