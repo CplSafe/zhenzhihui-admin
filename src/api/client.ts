@@ -2,17 +2,16 @@ import axios, { type AxiosRequestConfig } from "axios";
 import { ApiError, type ApiEnvelope } from "@/types/api";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
-const LOGIN_URL = import.meta.env.VITE_LOGIN_URL || "/auth/login";
 
-// 跳转 DeepAuth 登录,并发 401 只触发一次。后端 /auth/login 接受 redirect_to,登录完成后跳回。
+// 跳转到内部登录页(极简手机号+密码),并发 401 只触发一次。
+// 登录页在本地经 /deepauth 代理完成 OAuth 闭环;已在登录页时不重复跳。
 let redirecting = false;
 export function redirectToLogin(): void {
   if (redirecting) return;
+  if (window.location.pathname === "/login") return;
   redirecting = true;
   const current = window.location.pathname + window.location.search;
-  window.location.assign(
-    `${LOGIN_URL}?redirect_to=${encodeURIComponent(current)}`,
-  );
+  window.location.assign(`/login?redirect_to=${encodeURIComponent(current)}`);
 }
 
 const instance = axios.create({

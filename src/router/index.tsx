@@ -15,6 +15,7 @@ import { SubscriptionsPage } from "@/pages/SubscriptionsPage";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { ModelsPage } from "@/pages/ModelsPage";
 import { AdminUsersPage } from "@/pages/AdminUsersPage";
+import { LoginPage } from "@/pages/LoginPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { menuConfig } from "@/router/menuConfig";
 
@@ -45,6 +46,8 @@ const childRoutes = menuConfig.map((m) => ({
 }));
 
 export const router = createBrowserRouter([
+  // 公开登录页:不套 AuthGuard,避免未登录时被 401 拦截循环。
+  { path: "/login", element: <LoginPage /> },
   {
     path: "/",
     element: (
