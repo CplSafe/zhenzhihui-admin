@@ -1,8 +1,8 @@
-import { Button, Result, Spin } from 'antd'
-import type { ReactNode } from 'react'
-import { useAdminSession } from '@/hooks/useAdminSession'
-import { redirectToLogin } from '@/api/client'
-import { ApiCode } from '@/types/api'
+import { Button, Result, Spin } from "antd";
+import type { ReactNode } from "react";
+import { useAdminSession } from "@/hooks/useAdminSession";
+import { redirectToLogin } from "@/api/client";
+import { ApiCode } from "@/types/api";
 
 // 登录态 + 后台准入守卫:
 //   - 加载中 → 全屏 spinner
@@ -10,21 +10,25 @@ import { ApiCode } from '@/types/api'
 //   - 403 NOT_ADMIN / ADMIN_DISABLED → 友好拦截页
 //   - 通过 → 渲染子树(布局)
 export function AuthGuard({ children }: { children: ReactNode }) {
-  const { data, isLoading, error } = useAdminSession()
+  const { data, isLoading, error } = useAdminSession();
 
   if (isLoading) {
     return (
       <div
         style={{
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--color-ink-mute)",
         }}
       >
-        <Spin size="large" tip="加载后台会话…" />
+        <Spin size="large" />
+        <span>加载后台会话…</span>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -40,7 +44,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
             </Button>
           }
         />
-      )
+      );
     }
     if (error.codeString === ApiCode.ADMIN_DISABLED) {
       return (
@@ -54,7 +58,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
             </Button>
           }
         />
-      )
+      );
     }
     return (
       <Result
@@ -67,9 +71,9 @@ export function AuthGuard({ children }: { children: ReactNode }) {
           </Button>
         }
       />
-    )
+    );
   }
 
-  if (!data) return null
-  return <>{children}</>
+  if (!data) return null;
+  return <>{children}</>;
 }
