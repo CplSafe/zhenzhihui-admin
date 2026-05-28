@@ -81,6 +81,9 @@ export interface AssetListParams extends Paginated {
 }
 export const listAssets = listGet<Asset, AssetListParams>("/admin/assets");
 export const getAsset = (id: number) => http.get<Asset>(`/admin/assets/${id}`);
+// admin 跨 workspace 签发短期下载 URL(用于后台预览图片/视频)。
+export const getAssetDownloadURL = (id: number) =>
+  http.get<{ download_url: string }>(`/admin/assets/${id}/download-url`);
 
 export interface PaymentOrderListParams extends Paginated {
   workspace_id?: number;
