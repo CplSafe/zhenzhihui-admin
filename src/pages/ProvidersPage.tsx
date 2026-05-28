@@ -4,6 +4,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   Form,
   Input,
   InputNumber,
@@ -30,6 +31,8 @@ interface FormValues {
   base_url: string;
   timeout_seconds: number;
   api_key?: string;
+  // 勾选「清空 Key」→ 提交 api_key:""(后端据此清空并标记 cleared,不再回退 env)。
+  clear_api_key?: boolean;
 }
 
 export function ProvidersPage() {
@@ -37,6 +40,7 @@ export function ProvidersPage() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<ProviderConfigView | null>(null);
   const [form] = Form.useForm<FormValues>();
+  const clearKey = Form.useWatch("clear_api_key", form);
 
   const { data, isFetching, error } = useQuery<ProviderConfigView[], ApiError>({
     queryKey: ["admin", "providers"],
@@ -50,6 +54,7 @@ export function ProvidersPage() {
         base_url: editing.base_url,
         timeout_seconds: editing.timeout_seconds,
         api_key: "",
+        clear_api_key: false,
       });
     }
   }, [editing, form]);
@@ -59,8 +64,12 @@ export function ProvidersPage() {
       updateProviderConfig(editing!.provider, {
         base_url: v.base_url,
         timeout_seconds: v.timeout_seconds,
-        // 留空 = 不改 key(不传 api_key 字段);填了才更新。
-        ...(v.api_key && v.api_key.trim() ? { api_key: v.api_key.trim() } : {}),
+        // 三态:勾选清空 → api_key:"";填了新值 → 覆盖;都没有 → 不传(保留原 key)。
+        ...(v.clear_api_key
+          ? { api_key: "" }
+          : v.api_key && v.api_key.trim()
+            ? { api_key: v.api_key.trim() }
+            : {}),
       }),
     onSuccess: () => {
       message.success("已更新凭证");
@@ -72,17 +81,27 @@ export function ProvidersPage() {
   });
 
   // 测试连接:用当前表单值(base_url + 可选新 key)探测,不保存。
+  // 注意:key 框留空时后端用「已保存的 key」测;提示运维这一点,避免误以为在测新 key。
   const testMut = useMutation({
     mutationFn: () => {
       const v = form.getFieldsValue();
+      // 勾了「清空」时忽略输入框里可能残留的 key,用已保存的 key 测(与保存语义一致)。
+      const usingNewKey = !v.clear_api_key && !!(v.api_key && v.api_key.trim());
       return testProviderConnection(editing!.provider, {
         base_url: v.base_url,
         timeout_seconds: v.timeout_seconds,
-        ...(v.api_key && v.api_key.trim() ? { api_key: v.api_key.trim() } : {}),
-      });
+        ...(usingNewKey ? { api_key: v.api_key!.trim() } : {}),
+      }).then((r) => ({ ...r, usingNewKey }));
     },
-    onSuccess: (r) =>
-      r.ok ? message.success(r.message) : message.warning(r.message),
+    onSuccess: (r) => {
+      const suffix = r.usingNewKey ? "" : "(用已保存的 Key 测试)";
+      const msg = r.message + suffix;
+      if (r.ok) {
+        message.success(msg);
+      } else {
+        message.warning(msg);
+      }
+    },
     onError: (e: unknown) =>
       message.error(e instanceof ApiError ? e.message : "测试失败"),
   });
@@ -207,9 +226,15 @@ export function ProvidersPage() {
             extra="留空 = 不修改;填写新值则覆盖。出于安全,此处不回显当前 Key。"
           >
             <Input.Password
-              placeholder="留空则保留原 Key"
+              placeholder={clearKey ? "将清空该 Key" : "留空则保留原 Key"}
               autoComplete="new-password"
+              disabled={clearKey}
             />
+          </Form.Item>
+          <Form.Item name="clear_api_key" valuePropName="checked">
+            <Checkbox>
+              清空该 Provider 的 Key(下线该 provider,不再回退环境变量)
+            </Checkbox>
           </Form.Item>
           <Form.Item
             name="timeout_seconds"

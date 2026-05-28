@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   App,
@@ -77,8 +77,17 @@ export function PlansPage() {
     queryFn: listPlans,
   });
 
-  const editing = data?.find((p) => p.id === editId);
+  // entitlements JSON 合法性:非法时禁用保存,避免静默存旧值(见 JsonField)。
+  const [entitlementsValid, setEntitlementsValid] = useState(true);
+  // 切换编辑目标时在渲染期重置校验态(避免在 effect 里 setState 触发级联渲染)。
+  const [prevEditId, setPrevEditId] = useState(editId);
+  if (prevEditId !== editId) {
+    setPrevEditId(editId);
+    setEntitlementsValid(true);
+  }
 
+  // 仅在编辑目标(editId)变化时回填表单,不依赖 editing 的对象引用——
+  // 否则 invalidate() 刷新列表会换 editing 引用,导致弹窗内未保存的编辑被覆盖回滚。
   useEffect(() => {
     if (editId === 0) {
       form.resetFields();
@@ -88,18 +97,25 @@ export function PlansPage() {
         price_cents: 0,
         base_credits: 0,
       });
-    } else if (editing) {
-      form.setFieldsValue({
-        code: editing.code,
-        name: editing.name,
-        period: editing.period,
-        price_cents: editing.price_cents,
-        base_credits: editing.base_credits,
-        status: editing.status,
-        entitlements: editing.entitlements_json,
-      });
+      return;
     }
-  }, [editId, editing, form]);
+    if (editId && editId > 0) {
+      const plan = data?.find((p) => p.id === editId);
+      if (plan) {
+        form.setFieldsValue({
+          code: plan.code,
+          name: plan.name,
+          period: plan.period,
+          price_cents: plan.price_cents,
+          base_credits: plan.base_credits,
+          status: plan.status,
+          entitlements: plan.entitlements_json,
+        });
+      }
+    }
+    // 只依赖 editId / form:刷新列表(data 变化)不应重置表单。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, form]);
 
   const saveMut = useMutation({
     mutationFn: (v: FormValues) =>
@@ -238,6 +254,7 @@ export function PlansPage() {
         onCancel={close}
         onOk={() => form.submit()}
         confirmLoading={saveMut.isPending}
+        okButtonProps={{ disabled: !entitlementsValid }}
         width={600}
         destroyOnHidden
       >
@@ -293,6 +310,7 @@ export function PlansPage() {
             <JsonField
               rows={7}
               placeholder='{ "models": ["gpt-5.4"], "concurrency": 1 }'
+              onValidityChange={setEntitlementsValid}
             />
           </Form.Item>
         </Form>

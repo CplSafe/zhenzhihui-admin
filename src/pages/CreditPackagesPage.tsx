@@ -63,22 +63,28 @@ export function CreditPackagesPage() {
     queryFn: listCreditPackages,
   });
 
-  const editing = data?.find((p) => p.id === editId);
-
+  // 仅在编辑目标(editId)变化时回填,不依赖 data 引用——否则刷新列表会换引用,
+  // 覆盖弹窗内未保存的编辑。
   useEffect(() => {
     if (editId === 0) {
       form.resetFields();
       form.setFieldsValue({ status: "enabled", amount_cents: 0, credits: 0 });
-    } else if (editing) {
-      form.setFieldsValue({
-        code: editing.code,
-        name: editing.name,
-        amount_cents: editing.amount_cents,
-        credits: editing.credits,
-        status: editing.status,
-      });
+      return;
     }
-  }, [editId, editing, form]);
+    if (editId && editId > 0) {
+      const pkg = data?.find((p) => p.id === editId);
+      if (pkg) {
+        form.setFieldsValue({
+          code: pkg.code,
+          name: pkg.name,
+          amount_cents: pkg.amount_cents,
+          credits: pkg.credits,
+          status: pkg.status,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, form]);
 
   const saveMut = useMutation({
     mutationFn: (v: FormValues) =>

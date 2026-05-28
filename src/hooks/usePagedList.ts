@@ -46,8 +46,13 @@ export function usePagedList<T, F extends object>({
     showSizeChanger: true,
     showTotal: (t) => `共 ${t} 条`,
     onChange: (p, ps) => {
-      setPage(p);
-      setPageSize(ps);
+      // 改变每页条数时回到第 1 页,避免在高页码下切大页导致 offset 超出 total → 空表。
+      if (ps !== pageSize) {
+        setPageSize(ps);
+        setPage(1);
+      } else {
+        setPage(p);
+      }
     },
   };
 
