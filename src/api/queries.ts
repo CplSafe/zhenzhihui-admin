@@ -15,10 +15,10 @@ import type {
 
 // 用 object 而非 Record<string, unknown>,这样 interface 入参也满足约束
 // (TS interface 无隐式索引签名)。
-type QueryParams = object;
+export type QueryParams = object;
 
 // 把筛选对象转成 query string,丢弃 undefined / null / 空字符串。
-function qs(params: QueryParams): string {
+export function qs(params: QueryParams): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === "") continue;
@@ -28,7 +28,7 @@ function qs(params: QueryParams): string {
   return s ? `?${s}` : "";
 }
 
-function listGet<T, P extends QueryParams>(path: string) {
+export function listGet<T, P extends QueryParams>(path: string) {
   return (params: P = {} as P) => http.get<ListPage<T>>(`${path}${qs(params)}`);
 }
 

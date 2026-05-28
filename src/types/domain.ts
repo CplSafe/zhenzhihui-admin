@@ -131,11 +131,63 @@ export interface Subscription extends WorkspaceScoped {
 
 export interface AdminAuditLog extends Entity {
   actor_admin_user_id: number;
+  actor_local_user_id: number;
   action: string;
   resource_type: string;
   resource_id: string;
-  // 后端 payload 字段名以实际为准,统一作为可选 JSON 展示。
-  payload_json?: unknown;
+  before_json?: unknown;
+  after_json?: unknown;
+  ip?: string;
+  user_agent?: string;
+}
+
+// 后台管理员,对应 domain.AdminUser。
+export interface AdminUser extends MutableEntity {
+  deepauth_user_id: string;
+  local_user_id: number;
+  status: "active" | "disabled";
+  remark?: string;
+}
+
+// 后台角色,对应 domain.AdminRole。
+export interface AdminRole extends MutableEntity {
+  code: string;
+  name: string;
+  description?: string;
+  status?: string;
+}
+
+// admin_users 列表/详情对外形状,对应 admin.AdminUserView。
+// 列表只带 roles,详情额外带 permissions。
+export interface AdminUserView {
+  admin_user: AdminUser;
+  roles: AdminRole[];
+  permissions?: string[];
+}
+
+// 模型版本,对应 catalog.ModelVersion(admin 详情额外带 system_prompts)。
+// 复杂字段(pricing / params_schema / result_schema)结构因 provider 而异,
+// 统一以 unknown 透传,前端用 JSON 编辑器读写。
+export interface ModelVersion extends MutableEntity {
+  provider: string;
+  model: string;
+  version: string;
+  display_name: string;
+  capability: string;
+  enabled: boolean;
+  task_mode: string;
+  allowed_plans_json?: unknown;
+  pricing_json?: unknown;
+  operation_codes_json?: unknown;
+  params_schema_json?: unknown;
+  system_prompts_json?: unknown;
+  // admin 详情/写接口返回的结构化字段(catalog 形态)。
+  allowed_plans?: string[];
+  operation_codes?: string[];
+  pricing?: unknown;
+  params_schema?: unknown;
+  result_schema?: unknown;
+  system_prompts?: Record<string, string>;
 }
 
 // 运营概览,对应 admin.Overview。金额为分(cents),展示时转元。
