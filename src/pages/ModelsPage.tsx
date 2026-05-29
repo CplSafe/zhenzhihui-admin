@@ -74,11 +74,16 @@ export function ModelsPage() {
     setJsonValid({});
   }
 
+  // 编辑回填:editId 切换或详情首次到达时填表单。
+  // 当前 detail 查询在抽屉打开期间不会被 invalidate(refetchOnWindowFocus 全局关闭),
+  // 故不会用刷新数据覆盖未保存编辑;若将来给该查询加 invalidate,需改为"每目标只填一次"。
   useEffect(() => {
     if (editId === 0) {
       form.resetFields();
       form.setFieldsValue({ enabled: true, task_mode: "sync" });
-    } else if (editId && detail.data) {
+      return;
+    }
+    if (editId && editId > 0 && detail.data) {
       const d = detail.data;
       form.setFieldsValue({
         provider: d.provider,

@@ -343,10 +343,16 @@ function AdjustCreditModal({
       <Form form={form} layout="vertical" onFinish={(v) => mut.mutate(v)}>
         <Form.Item
           name="amount"
-          label="积分数额(累加,不覆盖)"
+          label="积分数额(正整数,累加不覆盖;上限 10 亿)"
           rules={[{ required: true, message: "请输入正整数" }]}
         >
-          <InputNumber min={1} style={{ width: "100%" }} placeholder="1000" />
+          <InputNumber
+            min={1}
+            max={1_000_000_000}
+            precision={0}
+            style={{ width: "100%" }}
+            placeholder="1000"
+          />
         </Form.Item>
         <Form.Item name="reason" label="原因(记入流水)">
           <Input placeholder="如:运营补偿 / 活动赠送" />
