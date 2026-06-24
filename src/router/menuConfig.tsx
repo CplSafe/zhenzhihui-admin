@@ -112,6 +112,13 @@ export const menuConfig: MenuItemConfig[] = [
     permission: Permission.MODELS_READ,
   },
   {
+    key: "banners",
+    path: "/banners",
+    label: "轮播图",
+    icon: <PictureOutlined />,
+    permission: Permission.BANNERS_READ,
+  },
+  {
     key: "providers",
     path: "/providers",
     label: "Provider 配置",

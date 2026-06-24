@@ -58,6 +58,8 @@ export const Permission = {
   SETTINGS_READ: "admin.settings.read",
   SETTINGS_WRITE: "admin.settings.write",
   GRANTS_WRITE: "admin.grants.write",
+  BANNERS_READ: "admin.banners.read",
+  BANNERS_WRITE: "admin.banners.write",
 } as const;
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission];

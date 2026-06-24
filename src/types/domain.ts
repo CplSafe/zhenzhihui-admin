@@ -190,6 +190,16 @@ export interface CreditPackage extends MutableEntity {
   status: "enabled" | "disabled";
 }
 
+// 首页轮播图,对应 domain.Banner。前台公开拉取 enabled 列表,后台 CRUD。
+export interface Banner extends MutableEntity {
+  title: string;
+  image_url: string;
+  link_url: string;
+  description: string;
+  position: number;
+  enabled: boolean;
+}
+
 // provider 凭证脱敏视图,对应 settings.ProviderConfigView。
 // 永不含明文/密文 key,只有掩码 + 是否已配置。
 export interface ProviderConfigView {
@@ -222,6 +232,17 @@ export interface AdminUserView {
   admin_user: AdminUser;
   roles: AdminRole[];
   permissions?: string[];
+}
+
+// 计价配置,对应 catalog.Pricing。chat 模型主要用 input/output_credit_rate(每千 token 积分),
+// 其余字段(视频按秒、并发限制)按需,运营用结构化表单填常用项,生僻项走高级 JSON。
+export interface Pricing {
+  input_credit_rate?: number;
+  output_credit_rate?: number;
+  provider_concurrency_limit?: number;
+  unit?: string;
+  hold_credits_per_second?: number;
+  credits_per_billable_second_by_resolution?: Record<string, number>;
 }
 
 // 模型版本,对应 catalog.ModelVersion(admin 详情额外带 system_prompts)。

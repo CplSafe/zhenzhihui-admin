@@ -1,10 +1,23 @@
 import { useEffect, useState } from "react";
-import { App, Button, Drawer, Form, Input, Select, Space, Switch } from "antd";
+import {
+  Alert,
+  App,
+  Button,
+  Collapse,
+  Drawer,
+  Form,
+  Input,
+  Select,
+  Space,
+  Switch,
+} from "antd";
 import type { TableColumnsType } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
 import { JsonField } from "@/components/JsonField";
+import { PricingField } from "@/components/PricingField";
+import { SystemPromptsField } from "@/components/SystemPromptsField";
 import { Mono, StatusTag } from "@/components/cells";
 import { usePagedList } from "@/hooks/usePagedList";
 import {
@@ -13,8 +26,10 @@ import {
   enableModel,
   getModel,
   listModels,
+  testModelConnection,
   updateModel,
   type ModelWriteBody,
+  type TestConnectionResult,
 } from "@/api/models";
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
@@ -44,7 +59,11 @@ export function ModelsPage() {
   const [filters, setFilters] = useState<Filters>({});
   // editId: null=未开抽屉, 0=新增, >0=编辑该 ID
   const [editId, setEditId] = useState<number | null>(null);
+  // 测连通结果(回复 + token + 扣费预览),切换编辑目标时清空。
+  const [probe, setProbe] = useState<TestConnectionResult | null>(null);
   const [form] = Form.useForm<ModelWriteBody>();
+  // system_prompts 的 opcode 下拉来源:跟随表单里已填的 operation_codes。
+  const watchedOps = Form.useWatch("operation_codes", form);
   // 各 JSON 字段合法性;任一非法则禁用保存,避免非法 JSON 静默存旧值(见 JsonField)。
   const [jsonValid, setJsonValid] = useState<Record<string, boolean>>({});
   const allJsonValid = Object.values(jsonValid).every(Boolean);
@@ -72,6 +91,7 @@ export function ModelsPage() {
   if (prevEditId !== editId) {
     setPrevEditId(editId);
     setJsonValid({});
+    setProbe(null);
   }
 
   // 编辑回填:editId 切换或详情首次到达时填表单。
@@ -138,6 +158,20 @@ export function ModelsPage() {
       invalidate();
     },
     onError,
+  });
+
+  // 测连通:对已保存模型真实发一条 chat,回显模型回复 + token + 扣费预览。
+  const testMut = useMutation({
+    mutationFn: () =>
+      testModelConnection(editId as number, {
+        operation_code: form.getFieldValue("operation_codes")?.[0],
+        prompt: "你好",
+      }),
+    onSuccess: (r) => setProbe(r),
+    onError: (e: unknown) => {
+      setProbe(null);
+      message.error(e instanceof ApiError ? e.message : "测连通失败");
+    },
   });
 
   const columns: TableColumnsType<ModelVersion> = [
@@ -259,6 +293,14 @@ export function ModelsPage() {
         extra={
           <Space>
             <Button onClick={() => setEditId(null)}>取消</Button>
+            {isEdit && (
+              <Button
+                loading={testMut.isPending}
+                onClick={() => testMut.mutate()}
+              >
+                测连通
+              </Button>
+            )}
             <Button
               type="primary"
               loading={saveMut.isPending}
@@ -270,6 +312,28 @@ export function ModelsPage() {
           </Space>
         }
       >
+        {probe && (
+          <Alert
+            type="success"
+            showIcon
+            closable
+            onClose={() => setProbe(null)}
+            style={{ marginBottom: 16 }}
+            message="连通成功"
+            description={
+              <div>
+                <div style={{ marginBottom: 4 }}>
+                  模型回复:{probe.reply || "(空)"}
+                </div>
+                <div style={{ fontSize: 12, color: "#666" }}>
+                  输入 {probe.prompt_tokens} token · 输出{" "}
+                  {probe.completion_tokens} token · 本次约扣{" "}
+                  {probe.estimated_credits} 积分(测连通不实际扣费)
+                </div>
+              </div>
+            }
+          />
+        )}
         <Form form={form} layout="vertical" onFinish={(v) => saveMut.mutate(v)}>
           <Form.Item
             name="provider"
@@ -313,37 +377,49 @@ export function ModelsPage() {
               placeholder="如 video.text_to_video / video.image_to_video"
             />
           </Form.Item>
-          <Form.Item name="pricing" label="计价 (pricing JSON)">
-            <JsonField rows={6} onValidityChange={setFieldValid("pricing")} />
-          </Form.Item>
-          <Form.Item
-            name="params_schema"
-            label="参数 schema (params_schema JSON)"
-          >
-            <JsonField
-              rows={8}
-              onValidityChange={setFieldValid("params_schema")}
-            />
-          </Form.Item>
-          <Form.Item
-            name="result_schema"
-            label="结果 schema (result_schema JSON)"
-          >
-            <JsonField
-              rows={6}
-              onValidityChange={setFieldValid("result_schema")}
-            />
+          <Form.Item name="pricing" label="计价(按 token,输入/输出分开)">
+            <PricingField onValidityChange={setFieldValid("pricing")} />
           </Form.Item>
           <Form.Item
             name="system_prompts"
-            label="系统提示词 (system_prompts JSON,op_code → prompt)"
+            label="系统提示词(按操作码配置,后端注入、前端不可覆盖)"
           >
-            <JsonField
-              rows={6}
-              placeholder='{ "responses.chat": "..." }'
-              onValidityChange={setFieldValid("system_prompts")}
-            />
+            <SystemPromptsField operationCodes={watchedOps ?? []} />
           </Form.Item>
+          <Collapse
+            ghost
+            size="small"
+            items={[
+              {
+                key: "adv",
+                label:
+                  "高级设置(参数 / 结果 schema,选填 — 对话模型一般无需填写)",
+                children: (
+                  <>
+                    <Form.Item
+                      name="params_schema"
+                      label="参数 schema (params_schema JSON)"
+                    >
+                      <JsonField
+                        rows={8}
+                        onValidityChange={setFieldValid("params_schema")}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      name="result_schema"
+                      label="结果 schema (result_schema JSON)"
+                      style={{ marginBottom: 0 }}
+                    >
+                      <JsonField
+                        rows={6}
+                        onValidityChange={setFieldValid("result_schema")}
+                      />
+                    </Form.Item>
+                  </>
+                ),
+              },
+            ]}
+          />
         </Form>
       </Drawer>
     </>
