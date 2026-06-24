@@ -194,6 +194,7 @@ export interface CreditPackage extends MutableEntity {
 export interface Banner extends MutableEntity {
   title: string;
   image_url: string;
+  media_type: "image" | "video";
   link_url: string;
   description: string;
   position: number;

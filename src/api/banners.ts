@@ -11,6 +11,7 @@ export interface BannerListParams {
 export interface BannerWriteBody {
   title?: string;
   image_url?: string;
+  media_type?: "image" | "video";
   link_url?: string;
   description?: string;
   position?: number;
@@ -19,7 +20,8 @@ export interface BannerWriteBody {
 
 export const listBanners = listGet<Banner, BannerListParams>("/admin/banners");
 
-export const getBanner = (id: number) => http.get<Banner>(`/admin/banners/${id}`);
+export const getBanner = (id: number) =>
+  http.get<Banner>(`/admin/banners/${id}`);
 
 export const createBanner = (body: BannerWriteBody) =>
   http.post<Banner>("/admin/banners", body);
@@ -38,9 +40,10 @@ export const deleteBanner = (id: number) =>
 
 export interface BannerUploadResult {
   image_url: string;
+  media_type: "image" | "video";
 }
 
-// 上传图片到公开桶,返回长期 URL(直接填入 image_url)。也可不上传、手填外部 URL。
+// 上传图片或视频到公开桶,返回长期 URL + media_type(直接填入表单)。也可不上传、手填外部 URL。
 export const uploadBannerImage = (file: File) => {
   const form = new FormData();
   form.append("file", file);

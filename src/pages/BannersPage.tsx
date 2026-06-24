@@ -73,6 +73,7 @@ export function BannersPage() {
       form.setFieldsValue({
         title: d.title,
         image_url: d.image_url,
+        media_type: d.media_type ?? "image",
         link_url: d.link_url,
         description: d.description,
         position: d.position,
@@ -126,15 +127,20 @@ export function BannersPage() {
     onError,
   });
 
-  // 上传图片:成功后把返回的公开 URL 写回表单 image_url 字段。
+  // 上传图片/视频:成功后把返回的公开 URL 与 media_type 写回表单。
   const beforeUpload: UploadProps["beforeUpload"] = async (file) => {
     setUploading(true);
     try {
       const res = await uploadBannerImage(file as File);
-      form.setFieldsValue({ image_url: res.image_url });
-      message.success("图片已上传");
+      form.setFieldsValue({
+        image_url: res.image_url,
+        media_type: res.media_type,
+      });
+      message.success(res.media_type === "video" ? "视频已上传" : "图片已上传");
     } catch (e) {
-      message.error(e instanceof ApiError ? e.message : "上传失败,可改为直接填写图片 URL");
+      message.error(
+        e instanceof ApiError ? e.message : "上传失败,可改为直接填写 URL",
+      );
     } finally {
       setUploading(false);
     }
@@ -142,26 +148,36 @@ export function BannersPage() {
   };
 
   const columns: TableColumnsType<Banner> = [
-    { title: "ID", dataIndex: "id", width: 70, render: (v) => <Mono>{v}</Mono> },
+    {
+      title: "ID",
+      dataIndex: "id",
+      width: 70,
+      render: (v) => <Mono>{v}</Mono>,
+    },
     {
       title: "预览",
       dataIndex: "image_url",
       width: 120,
-      render: (v: string) =>
-        v ? (
-          <img
-            src={v}
-            alt="banner"
-            style={{
-              width: 96,
-              height: 40,
-              objectFit: "cover",
-              borderRadius: 4,
-            }}
-          />
+      render: (_, r) => {
+        if (!r.image_url) return <span>-</span>;
+        const style = {
+          width: 96,
+          height: 40,
+          objectFit: "cover" as const,
+          borderRadius: 4,
+        };
+        return r.media_type === "video" ? (
+          <video src={r.image_url} style={style} muted />
         ) : (
-          <span>-</span>
-        ),
+          <img src={r.image_url} alt="banner" style={style} />
+        );
+      },
+    },
+    {
+      title: "类型",
+      dataIndex: "media_type",
+      width: 80,
+      render: (v: string) => (v === "video" ? "视频" : "图片"),
     },
     { title: "标题", dataIndex: "title" },
     { title: "排序", dataIndex: "position", width: 80 },
@@ -234,7 +250,10 @@ export function BannersPage() {
                 checkedChildren="只看启用"
                 unCheckedChildren="全部"
                 onChange={(on) =>
-                  setFilters((f) => ({ ...f, enabled: on ? "true" : undefined }))
+                  setFilters((f) => ({
+                    ...f,
+                    enabled: on ? "true" : undefined,
+                  }))
                 }
               />
             </Space>
@@ -283,20 +302,24 @@ export function BannersPage() {
           </Form.Item>
           <Form.Item
             name="image_url"
-            label="图片"
-            rules={[{ required: true, message: "上传图片或填写图片 URL" }]}
-            extra="点上传到对象存储自动回填,或直接粘贴外部图片 URL。"
+            label="媒体地址(图片或视频)"
+            rules={[{ required: true, message: "上传图片/视频或填写 URL" }]}
+            extra="点上传到对象存储自动回填,或直接粘贴外部图片/视频 URL。"
           >
-            <Input placeholder="https://.../banner.jpg" />
+            <Input placeholder="https://.../banner.jpg 或 .mp4" />
+          </Form.Item>
+          {/* media_type 由上传自动写入;手填外部 URL 时跟随,前台据此用 img/video 渲染。 */}
+          <Form.Item name="media_type" hidden initialValue="image">
+            <Input />
           </Form.Item>
           <Form.Item label=" " colon={false}>
             <Upload
-              accept="image/*"
+              accept="image/*,video/mp4,video/webm"
               showUploadList={false}
               beforeUpload={beforeUpload}
             >
               <Button icon={<UploadOutlined />} loading={uploading}>
-                上传图片
+                上传图片 / 视频
               </Button>
             </Upload>
           </Form.Item>
