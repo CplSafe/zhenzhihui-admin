@@ -119,6 +119,20 @@ export const menuConfig: MenuItemConfig[] = [
     permission: Permission.BANNERS_READ,
   },
   {
+    key: "feedback-types",
+    path: "/feedback-types",
+    label: "反馈类型",
+    icon: <TagsOutlined />,
+    permission: Permission.FEEDBACK_READ,
+  },
+  {
+    key: "feedbacks",
+    path: "/feedbacks",
+    label: "意见反馈",
+    icon: <FileSearchOutlined />,
+    permission: Permission.FEEDBACK_READ,
+  },
+  {
     key: "providers",
     path: "/providers",
     label: "Provider 配置",

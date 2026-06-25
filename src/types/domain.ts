@@ -201,6 +201,24 @@ export interface Banner extends MutableEntity {
   enabled: boolean;
 }
 
+// 反馈类型,对应 domain.FeedbackType。后台 CRUD,前台读启用列表。
+export interface FeedbackType extends MutableEntity {
+  name: string;
+  position: number;
+  enabled: boolean;
+}
+
+// 用户反馈,对应 domain.Feedback。
+export interface Feedback extends MutableEntity {
+  user_id: number;
+  feedback_type: number;
+  content: string;
+  contact: string;
+  asset_ids_json?: number[] | null;
+  status: "pending" | "resolved";
+  admin_note: string;
+}
+
 // provider 凭证脱敏视图,对应 settings.ProviderConfigView。
 // 永不含明文/密文 key,只有掩码 + 是否已配置。
 export interface ProviderConfigView {
