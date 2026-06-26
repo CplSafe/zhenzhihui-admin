@@ -64,6 +64,7 @@ export function ModelsPage() {
   const [form] = Form.useForm<ModelWriteBody>();
   // system_prompts 的 opcode 下拉来源:跟随表单里已填的 operation_codes。
   const watchedOps = Form.useWatch("operation_codes", form);
+  const watchedCapability = Form.useWatch("capability", form);
   // 各 JSON 字段合法性;任一非法则禁用保存,避免非法 JSON 静默存旧值(见 JsonField)。
   const [jsonValid, setJsonValid] = useState<Record<string, boolean>>({});
   const allJsonValid = Object.values(jsonValid).every(Boolean);
@@ -377,8 +378,14 @@ export function ModelsPage() {
               placeholder="如 video.text_to_video / video.image_to_video"
             />
           </Form.Item>
-          <Form.Item name="pricing" label="计价(按 token,输入/输出分开)">
-            <PricingField onValidityChange={setFieldValid("pricing")} />
+          <Form.Item
+            name="pricing"
+            label="计价(按千 token 积分单价;视频也按 token,只填一个单价)"
+          >
+            <PricingField
+              capability={watchedCapability}
+              onValidityChange={setFieldValid("pricing")}
+            />
           </Form.Item>
           <Form.Item
             name="system_prompts"
