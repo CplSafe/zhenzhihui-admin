@@ -262,6 +262,14 @@ export interface Pricing {
   unit?: string;
   hold_credits_per_second?: number;
   credits_per_billable_second_by_resolution?: Record<string, number>;
+  // Seedance 这类按 token 后置计费、单价随分辨率×含视频跳变的视频模型查表单价(积分/千 token)。
+  credits_per_thousand_tokens_by_tier?: Record<string, TierTokenRate>;
+}
+
+// 单个分辨率档的 token 单价(积分/千 token),按输入是否含视频区分。
+export interface TierTokenRate {
+  no_video?: number;
+  with_video?: number;
 }
 
 // 模型版本,对应 catalog.ModelVersion(admin 详情额外带 system_prompts)。
