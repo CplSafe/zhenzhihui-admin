@@ -17,7 +17,7 @@ import {
 import type { TableColumnsType } from "antd";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Can } from "@/components/Can";
-import { JsonField } from "@/components/JsonField";
+import { EntitlementsField } from "@/components/EntitlementsField";
 import { Count, Money, Mono, RowActions, StatusTag } from "@/components/cells";
 import {
   createPlan,
@@ -224,8 +224,8 @@ export function PlansPage() {
       <Alert
         type="info"
         showIcon
-        message="注册赠送套餐说明"
-        description="给套餐的 entitlements 加 is_trial_grant: true 即设为「新用户注册赠送」(最多一条);trial_days 控制试用天数,赠送积分 = 本套餐的「赠送积分」字段。system_only 套餐必须零价。"
+        message="套餐权益说明"
+        description="权益配置已改为表单填写:档位选「个人版 / 团队版」,可配可用模型、并发、席位、团队/空间上限(后两者仅展示分组,不强制拦截)。开「注册赠送」即设为新用户赠送套餐(最多一条,须同时开「系统专用」),试用天数由 trial_days 控制、赠送积分 = 上方「赠送积分」字段;系统专用套餐必须零价。其余少见字段在「高级权益」里以 JSON 填写。"
       />
 
       {error && (
@@ -303,15 +303,8 @@ export function PlansPage() {
               ]}
             />
           </Form.Item>
-          <Form.Item
-            name="entitlements"
-            label="权益 (entitlements JSON:models / concurrency / system_only / is_trial_grant / trial_days)"
-          >
-            <JsonField
-              rows={7}
-              placeholder='{ "models": ["gpt-5.4"], "concurrency": 1 }'
-              onValidityChange={setEntitlementsValid}
-            />
+          <Form.Item name="entitlements" label="权益配置">
+            <EntitlementsField onValidityChange={setEntitlementsValid} />
           </Form.Item>
         </Form>
       </Modal>
