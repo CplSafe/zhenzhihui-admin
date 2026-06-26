@@ -20,6 +20,7 @@ const COMMON_KEYS = [
   "output_credit_rate",
   "hold_credits_per_second",
   "credits_per_thousand_tokens_by_tier",
+  "credits_per_billable_second_by_resolution",
 ] as const;
 
 type CommonKey = (typeof COMMON_KEYS)[number];
@@ -27,6 +28,11 @@ type CommonKey = (typeof COMMON_KEYS)[number];
 // Seedance 真实单价随【分辨率】×【是否含输入视频】跳变,后台按这四档配 token 单价。
 const TIERS = ["480p", "720p", "1080p", "4k"] as const;
 type Tier = (typeof TIERS)[number];
+
+// HappyHorse(阿里云通义万相视频)按 usage.duration 秒数 × 分辨率档位结算。
+// key 必须与上游返回 SR 拼出的 "<SR>P" 完全一致(大写 P),后端 fmt.Sprintf("%dP", sr)。
+const SECOND_TIERS = ["720P", "1080P"] as const;
+type SecondTier = (typeof SECOND_TIERS)[number];
 
 // Seedance 720p 16:9 15s 估算 token 数,用于视频预览:
 // (输入0+输出15s) × 1280 × 720 × 24fps / 1024 = 324000。
@@ -47,6 +53,7 @@ export function PricingField({
   const pricing: Pricing = value ?? {};
   const isVideo = capability === "video";
   const tierTable = pricing.credits_per_thousand_tokens_by_tier ?? {};
+  const secondTable = pricing.credits_per_billable_second_by_resolution ?? {};
 
   // 高级 JSON 只承载"非常用"字段,避免与上面结构化框双向打架。
   const advanced: Record<string, unknown> = {};
@@ -80,6 +87,18 @@ export function PricingField({
     if (Object.keys(nextTable).length === 0)
       delete next.credits_per_thousand_tokens_by_tier;
     else next.credits_per_thousand_tokens_by_tier = nextTable;
+    emit(next);
+  };
+
+  // 设某分辨率档的每秒积分;清空则删该档,空表自动收缩(从 pricing 移除整个字段)。
+  const setSecondRate = (tier: SecondTier, v: number | null) => {
+    const nextTable: Record<string, number> = { ...secondTable };
+    if (v === null) delete nextTable[tier];
+    else nextTable[tier] = v;
+    const next: Pricing = { ...pricing };
+    if (Object.keys(nextTable).length === 0)
+      delete next.credits_per_billable_second_by_resolution;
+    else next.credits_per_billable_second_by_resolution = nextTable;
     emit(next);
   };
 
@@ -152,6 +171,39 @@ export function PricingField({
           {SEEDANCE_720P_15S_TOKENS / 1000}k token × {previewRate})。
           结算时按任务真实分辨率与是否含输入视频选档 × 上游 token;
           未配的档位回退下方「兜底单价」。
+        </Typography.Paragraph>
+
+        <FieldLabel text="按秒计费(HappyHorse 等阿里云视频:每秒积分,按分辨率档)" />
+        <Table<{ tier: SecondTier }>
+          size="small"
+          pagination={false}
+          rowKey="tier"
+          dataSource={SECOND_TIERS.map((tier) => ({ tier }))}
+          columns={[
+            { title: "分辨率", dataIndex: "tier", width: 90 },
+            {
+              title: "每秒积分",
+              width: 180,
+              render: (_, r) => (
+                <InputNumber
+                  min={0}
+                  precision={0}
+                  style={{ width: "100%" }}
+                  value={secondTable[r.tier]}
+                  onChange={(v) => setSecondRate(r.tier, v)}
+                  placeholder="如 180"
+                />
+              ),
+            },
+          ]}
+        />
+        <Typography.Paragraph
+          type="secondary"
+          style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
+        >
+          结算 = ⌈上游 usage.duration⌉ × 每秒积分(按任务真实分辨率选档)。
+          仅按秒计费的模型(HappyHorse)填本表;按 token
+          的模型(Seedance)填上方表,二者只填其一。
         </Typography.Paragraph>
 
         <Space size="large" wrap>
