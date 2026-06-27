@@ -8,8 +8,8 @@ import {
   InputNumber,
   Popconfirm,
   Space,
+  Switch,
 } from "antd";
-import { Switch } from "antd";
 import type { TableColumnsType } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPageShell } from "@/components/ListPageShell";
@@ -121,7 +121,12 @@ export function BannerCategoriesPage() {
   });
 
   const columns: TableColumnsType<BannerCategory> = [
-    { title: "ID", dataIndex: "id", width: 70, render: (v) => <Mono>{v}</Mono> },
+    {
+      title: "ID",
+      dataIndex: "id",
+      width: 70,
+      render: (v) => <Mono>{v}</Mono>,
+    },
     { title: "名称", dataIndex: "name" },
     {
       title: "slug(前端拉取键)",

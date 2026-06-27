@@ -79,7 +79,7 @@ export function BannersPage() {
   // 分类下拉数据(全量,含停用——编辑老 banner 时其分类可能已停用,仍需能显示)。
   const categoriesPage = useQuery<ListPage<BannerCategory>, ApiError>({
     queryKey: ["admin", "banner-categories", "for-banner-options"],
-    queryFn: () => listBannerCategories({ limit: 200 }),
+    queryFn: () => listBannerCategories({ limit: 100 }),
   });
   const categoryOptions = [
     { value: 0, label: "未分类" },
