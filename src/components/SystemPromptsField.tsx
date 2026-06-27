@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button, Input, Select, Space, Typography } from "antd";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 
@@ -33,16 +34,30 @@ export function SystemPromptsField({
   onChange,
   operationCodes = [],
 }: SystemPromptsFieldProps) {
-  const rows = toRows(value);
+  // 用本地 rows 承载编辑态:空 op 的中间态(刚点「添加」、还没选操作码)必须能留在 UI 上。
+  // 若直接从 value 派生 rows,toRecord 会把空 op 行丢掉,导致新行一加就消失(无法新建)。
+  // 只在 op 非空时才向上 flush 成 Record。
+  const [rows, setRows] = useState<Row[]>(() => toRows(value));
+  // 外部 value 变化(切换编辑目标/回填)时同步本地态。比对序列化结果避免每次渲染重置。
+  const [prevValueKey, setPrevValueKey] = useState(() =>
+    JSON.stringify(value ?? {}),
+  );
+  const valueKey = JSON.stringify(value ?? {});
+  if (valueKey !== prevValueKey) {
+    setPrevValueKey(valueKey);
+    setRows(toRows(value));
+  }
 
-  const emit = (next: Row[]) => onChange?.(toRecord(next));
+  const apply = (next: Row[]) => {
+    setRows(next);
+    onChange?.(toRecord(next));
+  };
 
   const update = (idx: number, patch: Partial<Row>) => {
-    const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
-    emit(next);
+    apply(rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   };
-  const add = () => emit([...rows, { op: "", prompt: "" }]);
-  const remove = (idx: number) => emit(rows.filter((_, i) => i !== idx));
+  const add = () => apply([...rows, { op: "", prompt: "" }]);
+  const remove = (idx: number) => apply(rows.filter((_, i) => i !== idx));
 
   // 下拉选项:模型已填的 operation_codes;chat 模型一般是 responses.* 系列。
   const opOptions = operationCodes.map((c) => ({ value: c, label: c }));

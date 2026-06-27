@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Collapse, InputNumber, Space, Table, Typography } from "antd";
+import { Collapse, InputNumber, Select, Space, Table, Typography } from "antd";
 import { JsonField } from "@/components/JsonField";
 import type { Pricing, TierTokenRate } from "@/types/domain";
 
@@ -16,11 +16,19 @@ interface PricingFieldProps {
 // 结构化承载的常用字段;其余(并发限制等)留高级 JSON。
 // video 多承载 hold_credits_per_second(按时长预冻占位)与 per-tier 单价表。
 const COMMON_KEYS = [
+  "unit",
   "input_credit_rate",
   "output_credit_rate",
   "hold_credits_per_second",
   "credits_per_thousand_tokens_by_tier",
   "credits_per_billable_second_by_resolution",
+] as const;
+
+// 计费单位(描述性,后端 validatePricing 要求非空)。按能力给合理默认。
+const UNIT_OPTIONS = [
+  { value: "generation", label: "按次(generation)" },
+  { value: "1k_tokens", label: "按千 token(1k_tokens)" },
+  { value: "second", label: "按秒(second)" },
 ] as const;
 
 type CommonKey = (typeof COMMON_KEYS)[number];
@@ -62,7 +70,13 @@ export function PricingField({
   }
   const [advancedValid, setAdvancedValid] = useState(true);
 
-  const emit = (next: Pricing) => onChange?.(next);
+  // 计费单位默认值按能力推断:视频→second,其余→generation。
+  // 后端 validatePricing 强制 unit 非空,故 emit 时兜底注入,确保纯表单配置也能保存。
+  const defaultUnit = isVideo ? "second" : "generation";
+  const emit = (next: Pricing) =>
+    onChange?.(next.unit ? next : { ...next, unit: defaultUnit });
+
+  const setUnit = (v: string) => emit({ ...pricing, unit: v });
 
   const setRate = (
     key: "input_credit_rate" | "output_credit_rate" | "hold_credits_per_second",
@@ -124,6 +138,7 @@ export function PricingField({
   if (isVideo) {
     return (
       <div>
+        {renderUnit()}
         <FieldLabel text="按分辨率 × 是否含输入视频 配 token 单价(积分 / 千 token)" />
         <Table<{ tier: Tier }>
           size="small"
@@ -238,6 +253,7 @@ export function PricingField({
 
   return (
     <div>
+      {renderUnit()}
       <Space size="large" wrap>
         <label>
           <FieldLabel text="输入单价(积分 / 千 token)" />
@@ -275,6 +291,20 @@ export function PricingField({
       {renderAdvanced()}
     </div>
   );
+
+  function renderUnit() {
+    return (
+      <label style={{ display: "block", marginBottom: 12 }}>
+        <FieldLabel text="计费单位(必填,描述性,不参与计算)" />
+        <Select
+          style={{ width: 240 }}
+          value={pricing.unit ?? defaultUnit}
+          onChange={setUnit}
+          options={[...UNIT_OPTIONS]}
+        />
+      </label>
+    );
+  }
 
   function renderAdvanced() {
     return (

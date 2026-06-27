@@ -38,6 +38,18 @@ interface Filters {
   enabled?: string;
 }
 
+// 视频扩展名:手填外部 URL 时据此推断 media_type(上传走服务端返回的类型,不依赖这里)。
+const VIDEO_URL_EXT = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
+
+// 提交前据 image_url 扩展名校正 media_type:手填 .mp4 URL 时隐藏字段仍是 "image",
+// 前台会误用 <img> 渲染视频。上传已设对类型,这里仅在 URL 像视频时覆盖。
+function withMediaTypeFromURL(v: BannerWriteBody): BannerWriteBody {
+  if (v.image_url && VIDEO_URL_EXT.test(v.image_url)) {
+    return { ...v, media_type: "video" };
+  }
+  return v;
+}
+
 export function BannersPage() {
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -129,6 +141,25 @@ export function BannersPage() {
 
   // 上传图片/视频:成功后把返回的公开 URL 与 media_type 写回表单。
   const beforeUpload: UploadProps["beforeUpload"] = async (file) => {
+    // 客户端预校验(服务端才是权威闸门,这里给运营即时反馈,挡明显错误)。
+    const f = file as File;
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "video/mp4",
+      "video/webm",
+    ];
+    if (f.type && !allowed.includes(f.type)) {
+      message.error("仅支持 JPEG/PNG/WebP/GIF 图片或 MP4/WebM 视频");
+      return Upload.LIST_IGNORE;
+    }
+    const maxBytes = 100 * 1024 * 1024; // 100MB
+    if (f.size > maxBytes) {
+      message.error("文件超过 100MB,请压缩后再上传");
+      return Upload.LIST_IGNORE;
+    }
     setUploading(true);
     try {
       const res = await uploadBannerImage(file as File);
@@ -292,7 +323,11 @@ export function BannersPage() {
           </Space>
         }
       >
-        <Form form={form} layout="vertical" onFinish={(v) => saveMut.mutate(v)}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={(v) => saveMut.mutate(withMediaTypeFromURL(v))}
+        >
           <Form.Item
             name="title"
             label="标题"
