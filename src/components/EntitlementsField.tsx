@@ -17,11 +17,20 @@ export interface Entitlements {
   [key: string]: unknown;
 }
 
+// 可用模型下拉选项:value 写入 entitlements.models(须为后端匹配的 model 标识),
+// label 带展示名方便运营辨认。由父组件从模型列表派生后传入。
+export interface ModelOption {
+  value: string;
+  label: string;
+}
+
 interface EntitlementsFieldProps {
   value?: Entitlements;
   onChange?: (value: Entitlements) => void;
   // 高级 JSON 解析失败时上报,父组件据此禁用保存(沿用 PlansPage 逻辑)。
   onValidityChange?: (valid: boolean) => void;
+  // 可用模型候选项;留空则退化为纯手填(mode=tags)。
+  modelOptions?: ModelOption[];
 }
 
 // 结构化承载的常用字段;其余字段(模型限定外的灵活配置)留在高级 JSON。
@@ -51,6 +60,7 @@ export function EntitlementsField({
   value,
   onChange,
   onValidityChange,
+  modelOptions,
 }: EntitlementsFieldProps) {
   const ent: Entitlements = value ?? {};
 
@@ -114,10 +124,13 @@ export function EntitlementsField({
           <Select
             mode="tags"
             style={{ width: "100%" }}
-            placeholder="如 gpt-5.4 / qwen3.7,回车添加"
+            placeholder="从已有模型中选择,或回车手填"
             value={ent.models}
             onChange={(v) => setCommon("models", v)}
             tokenSeparators={[",", " "]}
+            options={modelOptions}
+            optionFilterProp="label"
+            showSearch
           />
         </label>
 

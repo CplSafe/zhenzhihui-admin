@@ -18,6 +18,7 @@ import type { TableColumnsType } from "antd";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Can } from "@/components/Can";
 import { EntitlementsField } from "@/components/EntitlementsField";
+import type { ModelOption } from "@/components/EntitlementsField";
 import { Count, Money, Mono, RowActions, StatusTag } from "@/components/cells";
 import {
   createPlan,
@@ -26,16 +27,17 @@ import {
   listPlans,
   updatePlan,
 } from "@/api/plans";
+import { listModels } from "@/api/models";
 import { useResourceCrud } from "@/hooks/useResourceCrud";
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
-import type { Plan } from "@/types/domain";
+import type { ListPage, ModelVersion, Plan } from "@/types/domain";
 import { fmtTime } from "@/utils/format";
 
 interface FormValues {
   code: string;
   name: string;
-  period: "month" | "year";
+  period: "week" | "month" | "quarter" | "year";
   price_cents: number;
   base_credits: number;
   status: string;
@@ -76,6 +78,23 @@ export function PlansPage() {
     queryKey: ["admin", "plans"],
     queryFn: listPlans,
   });
+
+  // 拉模型列表,供「可用模型」下拉选择(value=model 标识,与后端 ensureModelAllowed 匹配)。
+  const { data: modelsPage } = useQuery<ListPage<ModelVersion>, ApiError>({
+    queryKey: ["admin", "models", "for-plan-options"],
+    queryFn: () => listModels({ limit: 200 }),
+  });
+  const modelOptions: ModelOption[] = (() => {
+    const seen = new Map<string, string>();
+    for (const m of modelsPage?.items ?? []) {
+      if (!m.model || seen.has(m.model)) continue;
+      seen.set(m.model, m.display_name || m.model);
+    }
+    return Array.from(seen, ([value, name]) => ({
+      value,
+      label: name === value ? value : `${name}（${value}）`,
+    }));
+  })();
 
   // entitlements JSON 合法性:非法时禁用保存,避免静默存旧值(见 JsonField)。
   const [entitlementsValid, setEntitlementsValid] = useState(true);
@@ -276,7 +295,9 @@ export function PlansPage() {
           <Form.Item name="period" label="周期" rules={[{ required: true }]}>
             <Select
               options={[
+                { value: "week", label: "7天" },
                 { value: "month", label: "月" },
+                { value: "quarter", label: "季度" },
                 { value: "year", label: "年" },
               ]}
             />
@@ -304,7 +325,10 @@ export function PlansPage() {
             />
           </Form.Item>
           <Form.Item name="entitlements" label="权益配置">
-            <EntitlementsField onValidityChange={setEntitlementsValid} />
+            <EntitlementsField
+              onValidityChange={setEntitlementsValid}
+              modelOptions={modelOptions}
+            />
           </Form.Item>
         </Form>
       </Modal>
