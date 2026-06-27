@@ -31,13 +31,13 @@ import { listModels } from "@/api/models";
 import { useResourceCrud } from "@/hooks/useResourceCrud";
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
-import type { ListPage, ModelVersion, Plan } from "@/types/domain";
+import type { ListPage, ModelVersion, Plan, PlanPeriod } from "@/types/domain";
 import { fmtTime } from "@/utils/format";
 
 interface FormValues {
   code: string;
   name: string;
-  period: "week" | "month" | "quarter" | "year";
+  period: PlanPeriod;
   price_cents: number;
   base_credits: number;
   status: string;
