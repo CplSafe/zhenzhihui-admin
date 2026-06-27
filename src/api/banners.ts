@@ -1,6 +1,6 @@
 import { http } from "@/api/client";
 import { listGet } from "@/api/queries";
-import type { Banner } from "@/types/domain";
+import type { Banner, BannerCategory } from "@/types/domain";
 
 export interface BannerListParams {
   enabled?: string;
@@ -12,6 +12,7 @@ export interface BannerWriteBody {
   title?: string;
   image_url?: string;
   media_type?: "image" | "video";
+  category_id?: number;
   link_url?: string;
   description?: string;
   position?: number;
@@ -49,3 +50,43 @@ export const uploadBannerImage = (file: File) => {
   form.append("file", file);
   return http.post<BannerUploadResult>("/admin/banners/upload", form);
 };
+
+// ---------- 轮播分类(投放位置)CRUD ----------
+
+export interface BannerCategoryListParams {
+  enabled?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface BannerCategoryWriteBody {
+  name?: string;
+  slug?: string;
+  position?: number;
+  enabled?: boolean;
+}
+
+export const listBannerCategories = listGet<
+  BannerCategory,
+  BannerCategoryListParams
+>("/admin/banner-categories");
+
+export const getBannerCategory = (id: number) =>
+  http.get<BannerCategory>(`/admin/banner-categories/${id}`);
+
+export const createBannerCategory = (body: BannerCategoryWriteBody) =>
+  http.post<BannerCategory>("/admin/banner-categories", body);
+
+export const updateBannerCategory = (
+  id: number,
+  body: BannerCategoryWriteBody,
+) => http.patch<BannerCategory>(`/admin/banner-categories/${id}`, body);
+
+export const enableBannerCategory = (id: number) =>
+  http.post<BannerCategory>(`/admin/banner-categories/${id}/enable`);
+
+export const disableBannerCategory = (id: number) =>
+  http.post<BannerCategory>(`/admin/banner-categories/${id}/disable`);
+
+export const deleteBannerCategory = (id: number) =>
+  http.delete<{ deleted: boolean }>(`/admin/banner-categories/${id}`);

@@ -119,6 +119,13 @@ export const menuConfig: MenuItemConfig[] = [
     permission: Permission.BANNERS_READ,
   },
   {
+    key: "banner-categories",
+    path: "/banner-categories",
+    label: "轮播分类",
+    icon: <PictureOutlined />,
+    permission: Permission.BANNERS_READ,
+  },
+  {
     key: "feedback-types",
     path: "/feedback-types",
     label: "反馈类型",

@@ -7,6 +7,7 @@ import {
   Input,
   InputNumber,
   Popconfirm,
+  Select,
   Space,
   Switch,
   Upload,
@@ -25,13 +26,14 @@ import {
   enableBanner,
   getBanner,
   listBanners,
+  listBannerCategories,
   updateBanner,
   uploadBannerImage,
   type BannerWriteBody,
 } from "@/api/banners";
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
-import type { Banner } from "@/types/domain";
+import type { Banner, BannerCategory, ListPage } from "@/types/domain";
 import { fmtTime } from "@/utils/format";
 
 interface Filters {
@@ -74,10 +76,23 @@ export function BannersPage() {
     enabled: editId !== null && editId > 0,
   });
 
+  // 分类下拉数据(全量,含停用——编辑老 banner 时其分类可能已停用,仍需能显示)。
+  const categoriesPage = useQuery<ListPage<BannerCategory>, ApiError>({
+    queryKey: ["admin", "banner-categories", "for-banner-options"],
+    queryFn: () => listBannerCategories({ limit: 200 }),
+  });
+  const categoryOptions = [
+    { value: 0, label: "未分类" },
+    ...(categoriesPage.data?.items ?? []).map((c) => ({
+      value: c.id,
+      label: `${c.name}（${c.slug}）${c.enabled ? "" : " · 已停用"}`,
+    })),
+  ];
+
   useEffect(() => {
     if (editId === 0) {
       form.resetFields();
-      form.setFieldsValue({ enabled: true, position: 0 });
+      form.setFieldsValue({ enabled: true, position: 0, category_id: 0 });
       return;
     }
     if (editId && editId > 0 && detail.data) {
@@ -86,6 +101,7 @@ export function BannersPage() {
         title: d.title,
         image_url: d.image_url,
         media_type: d.media_type ?? "image",
+        category_id: d.category_id ?? 0,
         link_url: d.link_url,
         description: d.description,
         position: d.position,
@@ -334,6 +350,19 @@ export function BannersPage() {
             rules={[{ required: true, message: "必填" }]}
           >
             <Input placeholder="夏季活动" />
+          </Form.Item>
+          <Form.Item
+            name="category_id"
+            label="分类(投放位置)"
+            extra="决定这张图属于哪个位置(首页轮播 / 登录页…),前端按分类拉取。"
+          >
+            <Select
+              options={categoryOptions}
+              loading={categoriesPage.isFetching}
+              showSearch
+              optionFilterProp="label"
+              placeholder="选择投放位置"
+            />
           </Form.Item>
           <Form.Item
             name="image_url"

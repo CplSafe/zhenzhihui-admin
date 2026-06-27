@@ -15,6 +15,7 @@ import { SubscriptionsPage } from "@/pages/SubscriptionsPage";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { ModelsPage } from "@/pages/ModelsPage";
 import { BannersPage } from "@/pages/BannersPage";
+import { BannerCategoriesPage } from "@/pages/BannerCategoriesPage";
 import { FeedbackTypesPage } from "@/pages/FeedbackTypesPage";
 import { FeedbacksPage } from "@/pages/FeedbacksPage";
 import { AdminUsersPage } from "@/pages/AdminUsersPage";
@@ -40,6 +41,7 @@ const pageByKey: Record<string, ReactNode> = {
   "credit-packages": <CreditPackagesPage />,
   models: <ModelsPage />,
   banners: <BannersPage />,
+  "banner-categories": <BannerCategoriesPage />,
   "feedback-types": <FeedbackTypesPage />,
   feedbacks: <FeedbacksPage />,
   providers: <ProvidersPage />,

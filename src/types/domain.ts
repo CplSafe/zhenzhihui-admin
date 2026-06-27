@@ -192,8 +192,19 @@ export interface Banner extends MutableEntity {
   title: string;
   image_url: string;
   media_type: "image" | "video";
+  // category_id 关联 BannerCategory(投放位置);0 = 未分类。
+  category_id: number;
   link_url: string;
   description: string;
+  position: number;
+  enabled: boolean;
+}
+
+// 轮播分类(投放位置:首页轮播 / 登录页 …),对应 domain.BannerCategory。
+// 前台按 slug 拉取对应位置的 banner;后台 CRUD。
+export interface BannerCategory extends MutableEntity {
+  name: string;
+  slug: string;
   position: number;
   enabled: boolean;
 }
