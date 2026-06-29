@@ -37,14 +37,11 @@ type CommonKey = (typeof COMMON_KEYS)[number];
 const TIERS = ["480p", "720p", "1080p", "4k"] as const;
 type Tier = (typeof TIERS)[number];
 
-// HappyHorse(阿里云通义万相视频)按 usage.duration 秒数 × 分辨率档位结算。
-// key 必须与上游返回 SR 拼出的 "<SR>P" 完全一致(大写 P),后端 fmt.Sprintf("%dP", sr)。
-const SECOND_TIERS = ["720P", "1080P"] as const;
+// 视频统一计费:积分 = 单价[清晰度] × 时长(秒),预冻=结算(后端 ai.videoCredits)。
+// 所有视频(Seedance / 爆款做同款 / HappyHorse)都用本表。key 用大写(库内统一约定,
+// 后端查表大小写双查;HappyHorse 上游 SR 拼出的 "<SR>P" 也是大写)。
+const SECOND_TIERS = ["480P", "720P", "1080P"] as const;
 type SecondTier = (typeof SECOND_TIERS)[number];
-
-// Seedance 720p 16:9 15s 估算 token 数,用于视频预览:
-// (输入0+输出15s) × 1280 × 720 × 24fps / 1024 = 324000。
-const SEEDANCE_720P_15S_TOKENS = 324000;
 
 function FieldLabel({ text }: { text: string }) {
   return (
@@ -129,16 +126,91 @@ export function PricingField({
 
   const inRate = pricing.input_credit_rate ?? 0;
   const outRate = pricing.output_credit_rate ?? 0;
-  // 视频预览用 720p 不含视频档单价(没配则回退 output_credit_rate)。
-  const previewRate = tierTable["720p"]?.no_video ?? outRate;
-  const videoCredits = Math.ceil(
-    (SEEDANCE_720P_15S_TOKENS * previewRate) / 1000,
-  );
 
   if (isVideo) {
     return (
       <div>
         {renderUnit()}
+        <FieldLabel text="视频计费(每秒积分,按清晰度档):积分 = 每秒积分 × 时长(秒)" />
+        <Table<{ tier: SecondTier }>
+          size="small"
+          pagination={false}
+          rowKey="tier"
+          dataSource={SECOND_TIERS.map((tier) => ({ tier }))}
+          columns={[
+            { title: "清晰度", dataIndex: "tier", width: 90 },
+            {
+              title: "每秒积分",
+              width: 180,
+              render: (_, r) => (
+                <InputNumber
+                  min={0}
+                  precision={0}
+                  style={{ width: "100%" }}
+                  value={secondTable[r.tier]}
+                  onChange={(v) => setSecondRate(r.tier, v)}
+                  placeholder="如 160"
+                />
+              ),
+            },
+          ]}
+        />
+        <Typography.Paragraph
+          type="secondary"
+          style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
+        >
+          这是所有视频模型的权威计费表:预冻与实扣都按「每秒积分 × 时长」,
+          两头一致、与上游 token / 实际出片秒数无关。比例(16:9 / 9:16
+          等)不影响价。清晰度档没配则回退到下方「兜底单价」。
+        </Typography.Paragraph>
+
+        <Collapse
+          ghost
+          size="small"
+          items={[
+            {
+              key: "legacy-token-tier",
+              label: "旧版:按 token 单价表(已停用,仅兼容历史配置)",
+              children: renderLegacyTierTable(),
+            },
+          ]}
+        />
+
+        <Space size="large" wrap style={{ marginTop: 8 }}>
+          <label>
+            <FieldLabel text="兜底单价(每秒积分,清晰度档没配时用)" />
+            <InputNumber
+              min={0}
+              precision={0}
+              style={{ width: 240 }}
+              value={pricing.output_credit_rate}
+              onChange={(v) => setRate("output_credit_rate", v)}
+              placeholder="如 160"
+            />
+          </label>
+          <label>
+            <FieldLabel text="每秒预冻积分(hold,清晰度档与兜底单价都没配时用)" />
+            <InputNumber
+              min={0}
+              precision={0}
+              style={{ width: 240 }}
+              value={pricing.hold_credits_per_second}
+              onChange={(v) => setRate("hold_credits_per_second", v)}
+              placeholder="如 200"
+            />
+          </label>
+        </Space>
+
+        {renderAdvanced()}
+      </div>
+    );
+  }
+
+  // renderLegacyTierTable 渲染已停用的「按 token × 分辨率档」单价表,
+  // 仅为兼容历史配置展示,新口径(每秒积分 × 时长)不再消费此表。
+  function renderLegacyTierTable() {
+    return (
+      <>
         <FieldLabel text="按分辨率 × 是否含输入视频 配 token 单价(积分 / 千 token)" />
         <Table<{ tier: Tier }>
           size="small"
@@ -181,73 +253,10 @@ export function PricingField({
           type="secondary"
           style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
         >
-          预览:720p 16:9 15s 视频 ≈{" "}
-          <Typography.Text strong>{videoCredits}</Typography.Text> 积分 (约{" "}
-          {SEEDANCE_720P_15S_TOKENS / 1000}k token × {previewRate})。
-          结算时按任务真实分辨率与是否含输入视频选档 × 上游 token;
-          未配的档位回退下方「兜底单价」。
+          已停用:此表是旧的「token × 分辨率档」单价,新口径(每秒积分 ×
+          时长)不再消费它,仅展示历史配置。请改用上方「每秒积分」表。
         </Typography.Paragraph>
-
-        <FieldLabel text="按秒计费(HappyHorse 等阿里云视频:每秒积分,按分辨率档)" />
-        <Table<{ tier: SecondTier }>
-          size="small"
-          pagination={false}
-          rowKey="tier"
-          dataSource={SECOND_TIERS.map((tier) => ({ tier }))}
-          columns={[
-            { title: "分辨率", dataIndex: "tier", width: 90 },
-            {
-              title: "每秒积分",
-              width: 180,
-              render: (_, r) => (
-                <InputNumber
-                  min={0}
-                  precision={0}
-                  style={{ width: "100%" }}
-                  value={secondTable[r.tier]}
-                  onChange={(v) => setSecondRate(r.tier, v)}
-                  placeholder="如 180"
-                />
-              ),
-            },
-          ]}
-        />
-        <Typography.Paragraph
-          type="secondary"
-          style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
-        >
-          结算 = ⌈上游 usage.duration⌉ × 每秒积分(按任务真实分辨率选档)。
-          仅按秒计费的模型(HappyHorse)填本表;按 token
-          的模型(Seedance)填上方表,二者只填其一。
-        </Typography.Paragraph>
-
-        <Space size="large" wrap>
-          <label>
-            <FieldLabel text="兜底单价(积分 / 千 token,档位没配时用)" />
-            <InputNumber
-              min={0}
-              precision={0}
-              style={{ width: 240 }}
-              value={pricing.output_credit_rate}
-              onChange={(v) => setRate("output_credit_rate", v)}
-              placeholder="如 15"
-            />
-          </label>
-          <label>
-            <FieldLabel text="每秒预冻积分(hold,提交时占位防 0 余额)" />
-            <InputNumber
-              min={0}
-              precision={0}
-              style={{ width: 240 }}
-              value={pricing.hold_credits_per_second}
-              onChange={(v) => setRate("hold_credits_per_second", v)}
-              placeholder="如 350"
-            />
-          </label>
-        </Space>
-
-        {renderAdvanced()}
-      </div>
+      </>
     );
   }
 
