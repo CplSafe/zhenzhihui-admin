@@ -174,6 +174,9 @@ export interface Plan extends MutableEntity {
   period: PlanPeriod;
   price_cents: number;
   base_credits: number;
+  discount_enabled: boolean;
+  discount_percent: number; // 80=八折
+  discounted_price_cents: number; // 后端算好的折后价(应付),只读展示
   entitlements_json?: unknown;
   status: "enabled" | "disabled";
 }

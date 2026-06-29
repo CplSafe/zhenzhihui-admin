@@ -10,6 +10,7 @@ import {
   Modal,
   Select,
   Space,
+  Switch,
   Table,
   Tag,
   Typography,
@@ -40,6 +41,8 @@ interface FormValues {
   period: PlanPeriod;
   price_cents: number;
   base_credits: number;
+  discount_enabled: boolean;
+  discount_percent: number;
   status: string;
   entitlements?: unknown;
 }
@@ -115,6 +118,8 @@ export function PlansPage() {
         status: "enabled",
         price_cents: 0,
         base_credits: 0,
+        discount_enabled: false,
+        discount_percent: 100,
       });
       return;
     }
@@ -127,6 +132,8 @@ export function PlansPage() {
           period: plan.period,
           price_cents: plan.price_cents,
           base_credits: plan.base_credits,
+          discount_enabled: plan.discount_enabled,
+          discount_percent: plan.discount_percent ?? 100,
           status: plan.status,
           entitlements: plan.entitlements_json,
         });
@@ -144,6 +151,8 @@ export function PlansPage() {
             period: v.period,
             price_cents: v.price_cents,
             base_credits: v.base_credits,
+            discount_enabled: v.discount_enabled,
+            discount_percent: v.discount_percent,
             status: v.status,
             entitlements: v.entitlements,
           })
@@ -153,6 +162,8 @@ export function PlansPage() {
             period: v.period,
             price_cents: v.price_cents,
             base_credits: v.base_credits,
+            discount_enabled: v.discount_enabled,
+            discount_percent: v.discount_percent,
             status: v.status,
             entitlements: v.entitlements,
           }),
@@ -189,8 +200,19 @@ export function PlansPage() {
     {
       title: "价格",
       dataIndex: "price_cents",
-      width: 110,
-      render: (v) => <Money cents={v} />,
+      width: 160,
+      render: (v, r) =>
+        r.discount_enabled ? (
+          <Space size={4}>
+            <Typography.Text delete type="secondary">
+              <Money cents={v} />
+            </Typography.Text>
+            <Money cents={r.discounted_price_cents} />
+            <Tag color="red">{r.discount_percent / 10}折</Tag>
+          </Space>
+        ) : (
+          <Money cents={v} />
+        ),
     },
     {
       title: "赠送积分",
@@ -304,10 +326,53 @@ export function PlansPage() {
           </Form.Item>
           <Form.Item
             name="price_cents"
-            label="价格(分)"
+            label="原价(分)"
             rules={[{ required: true }]}
           >
             <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item
+            name="discount_enabled"
+            label="开启折扣"
+            valuePropName="checked"
+            extra="开启后,实际支付按折后价(原价×折扣);赠送积分不打折。"
+          >
+            <Switch />
+          </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, cur) =>
+              prev.discount_enabled !== cur.discount_enabled ||
+              prev.discount_percent !== cur.discount_percent ||
+              prev.price_cents !== cur.price_cents
+            }
+          >
+            {({ getFieldValue }) =>
+              getFieldValue("discount_enabled") ? (
+                <Form.Item
+                  name="discount_percent"
+                  label="折扣(几折,80=八折)"
+                  rules={[
+                    { required: true, message: "必填" },
+                    {
+                      type: "number",
+                      min: 1,
+                      max: 100,
+                      message: "折扣须在 1-100",
+                    },
+                  ]}
+                  extra={(() => {
+                    const price = Number(getFieldValue("price_cents")) || 0;
+                    const pct =
+                      Number(getFieldValue("discount_percent")) || 100;
+                    const after = Math.round((price * pct) / 100);
+                    return `折后价:¥${(after / 100).toFixed(2)}(${after} 分),实际去支付宝按此金额收款`;
+                  })()}
+                >
+                  <InputNumber min={1} max={100} style={{ width: "100%" }} />
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
           <Form.Item
             name="base_credits"

@@ -7,6 +7,8 @@ export interface PlanWriteBody {
   period?: PlanPeriod;
   price_cents?: number;
   base_credits?: number;
+  discount_enabled?: boolean;
+  discount_percent?: number; // 80=八折
   entitlements?: unknown;
   status?: string;
 }
