@@ -18,6 +18,7 @@ import { BannersPage } from "@/pages/BannersPage";
 import { BannerCategoriesPage } from "@/pages/BannerCategoriesPage";
 import { FeedbackTypesPage } from "@/pages/FeedbackTypesPage";
 import { FeedbacksPage } from "@/pages/FeedbacksPage";
+import { ReferralPage } from "@/pages/ReferralPage";
 import { AdminUsersPage } from "@/pages/AdminUsersPage";
 import { PlansPage } from "@/pages/PlansPage";
 import { CreditPackagesPage } from "@/pages/CreditPackagesPage";
@@ -44,6 +45,7 @@ const pageByKey: Record<string, ReactNode> = {
   "banner-categories": <BannerCategoriesPage />,
   "feedback-types": <FeedbackTypesPage />,
   feedbacks: <FeedbacksPage />,
+  referral: <ReferralPage />,
   providers: <ProvidersPage />,
   "admin-users": <AdminUsersPage />,
   "audit-logs": <AuditLogsPage />,

@@ -140,6 +140,13 @@ export const menuConfig: MenuItemConfig[] = [
     permission: Permission.FEEDBACK_READ,
   },
   {
+    key: "referral",
+    path: "/referral",
+    label: "销售数据",
+    icon: <TeamOutlined />,
+    permission: Permission.REFERRAL_READ,
+  },
+  {
     key: "providers",
     path: "/providers",
     label: "Provider 配置",

@@ -62,6 +62,7 @@ export const Permission = {
   BANNERS_WRITE: "admin.banners.write",
   FEEDBACK_READ: "admin.feedback.read",
   FEEDBACK_WRITE: "admin.feedback.write",
+  REFERRAL_READ: "admin.referral.read",
 } as const;
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission];

@@ -9,6 +9,7 @@ import type {
   ListPage,
   Overview,
   PaymentOrder,
+  ReferralBindingItem,
   Subscription,
   User,
   Workspace,
@@ -46,6 +47,18 @@ export interface UserListParams extends Paginated {
 export const listUsers = listGet<User, UserListParams>("/admin/users");
 export const getUser = (id: number) =>
   http.get<AdminUserDetail>(`/admin/users/${id}`);
+
+// 销售数据(推广绑定):按 邀请人/被邀请人 的 ID/手机号 查询。
+export interface ReferralBindingListParams extends Paginated {
+  referrer_user_id?: number;
+  referee_user_id?: number;
+  referrer_mobile?: string;
+  referee_mobile?: string;
+}
+export const listReferralBindings = listGet<
+  ReferralBindingItem,
+  ReferralBindingListParams
+>("/admin/referral/bindings");
 
 export interface WorkspaceListParams extends Paginated {
   type?: string;

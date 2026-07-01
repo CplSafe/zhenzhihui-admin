@@ -49,6 +49,19 @@ export interface User extends MutableEntity {
   email_verified_at?: string;
 }
 
+// 销售数据(推广绑定)列表行:邀请人 + 被邀请人 双方档案 + 绑定码 + 绑定时间。
+export interface ReferralBindingItem {
+  id: number;
+  created_at: string;
+  code: string;
+  referrer_user_id: number;
+  referrer_mobile?: string;
+  referrer_nickname?: string;
+  referee_user_id: number;
+  referee_mobile?: string;
+  referee_nickname?: string;
+}
+
 export interface Workspace extends MutableEntity {
   type: WorkspaceType;
   name: string;
