@@ -42,6 +42,9 @@ const STATUS_COLOR: Record<string, string> = {
   disabled: "default",
   canceled: "default",
   deleted: "default",
+  // 工作空间:待激活(买 team 套餐开新空间未付款)/ 已解散
+  activation_pending: "gold",
+  disbanded: "default",
 };
 
 export function StatusTag({ status }: { status?: string }) {

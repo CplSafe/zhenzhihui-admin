@@ -13,6 +13,7 @@ import type {
   Subscription,
   User,
   Workspace,
+  WorkspaceMemberStat,
 } from "@/types/domain";
 
 // 用 object 而非 Record<string, unknown>,这样 interface 入参也满足约束
@@ -72,6 +73,8 @@ export const getWorkspace = (id: number) =>
   http.get<unknown>(`/admin/workspaces/${id}`);
 export const listWorkspaceMembers = (id: number) =>
   http.get<unknown[]>(`/admin/workspaces/${id}/members`);
+export const listWorkspaceMemberStatistics = (id: number) =>
+  http.get<WorkspaceMemberStat[]>(`/admin/workspaces/${id}/member-statistics`);
 
 export interface AITaskListParams extends Paginated {
   workspace_id?: number;
