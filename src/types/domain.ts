@@ -32,7 +32,10 @@ interface WorkspaceScoped extends MutableEntity {
 }
 
 export type WorkspaceType = "personal" | "team" | "enterprise";
-export type WorkspaceStatus = "enabled" | "disabled";
+// activation_pending:买 team 套餐开新空间时下单即建的占位空间,付款激活前不可用、列表隐藏;
+// disbanded:已解散(owner 解散 / 未付款开团队单被清理)。
+export type WorkspaceStatus =
+  "enabled" | "disabled" | "disbanded" | "activation_pending";
 export type AssetType = "image" | "video" | "audio" | "prompt";
 export type AssetStatus = "pending" | "active" | "rejected" | "deleted";
 export type PaymentOrderType =
@@ -67,6 +70,19 @@ export interface Workspace extends MutableEntity {
   name: string;
   owner_user_id: number;
   status: WorkspaceStatus;
+}
+
+// 空间内单个成员的消耗/作品统计(本月 Asia/Shanghai + 累计),对应后端 admin.WorkspaceMemberStatItem。
+// 消耗积分只计 settle(结算),作品数只计 active。
+export interface WorkspaceMemberStat {
+  user_id: number;
+  nickname: string;
+  role: string;
+  status: string;
+  month_credits: number;
+  total_credits: number;
+  month_works: number;
+  total_works: number;
 }
 
 export interface AITask extends WorkspaceScoped {
