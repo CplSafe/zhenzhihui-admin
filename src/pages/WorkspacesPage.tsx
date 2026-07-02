@@ -4,8 +4,16 @@ import type { TableColumnsType } from 'antd'
 import { ListPageShell } from '@/components/ListPageShell'
 import { Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
-import { listWorkspaceMemberStatistics, listWorkspaces } from '@/api/queries'
-import type { Workspace, WorkspaceMemberStat } from '@/types/domain'
+import {
+  listWorkspaceAuditLogs,
+  listWorkspaceMemberStatistics,
+  listWorkspaces,
+} from '@/api/queries'
+import type {
+  Workspace,
+  WorkspaceAuditLog,
+  WorkspaceMemberStat,
+} from '@/types/domain'
 import { fmtTime } from '@/utils/format'
 
 const TYPE_LABEL: Record<string, string> = {
@@ -20,6 +28,18 @@ const ROLE_LABEL: Record<string, string> = {
   member: '成员',
 }
 
+// 审计动作 → 中文标签(对齐后端 domain.AuditAction* 枚举)。
+const ACTION_LABEL: Record<string, string> = {
+  'invitation.created': '创建邀请',
+  'invitation.revoked': '撤销邀请',
+  'invitation.redeemed': '接受邀请',
+  'member.role_changed': '变更角色',
+  'member.removed': '移除成员',
+  'member.left': '成员退出',
+  'workspace.ownership_transferred': '转让所有权',
+  'workspace.disbanded': '解散空间',
+}
+
 const memberStatColumns: TableColumnsType<WorkspaceMemberStat> = [
   { title: '用户 ID', dataIndex: 'user_id', width: 100, render: (v) => <Mono>{v}</Mono> },
   { title: '昵称', dataIndex: 'nickname', render: (v) => v || '—' },
@@ -28,6 +48,18 @@ const memberStatColumns: TableColumnsType<WorkspaceMemberStat> = [
   { title: '累计消耗', dataIndex: 'total_credits', width: 100, render: (v) => <Mono>{v}</Mono> },
   { title: '本月作品', dataIndex: 'month_works', width: 100, render: (v) => <Mono>{v}</Mono> },
   { title: '累计作品', dataIndex: 'total_works', width: 100, render: (v) => <Mono>{v}</Mono> },
+]
+
+const auditColumns: TableColumnsType<WorkspaceAuditLog> = [
+  { title: '时间', dataIndex: 'created_at', width: 170, render: (v) => fmtTime(v) },
+  { title: '动作', dataIndex: 'action', width: 120, render: (v) => ACTION_LABEL[v] ?? v },
+  { title: '操作人', dataIndex: 'actor_user_id', width: 100, render: (v) => <Mono>{v}</Mono> },
+  {
+    title: '目标用户',
+    dataIndex: 'target_user_id',
+    width: 100,
+    render: (v) => (v ? <Mono>{v}</Mono> : '—'),
+  },
 ]
 
 interface Filters {
@@ -41,6 +73,9 @@ export function WorkspacesPage() {
   const [statWs, setStatWs] = useState<Workspace | null>(null)
   const [stats, setStats] = useState<WorkspaceMemberStat[]>([])
   const [statsLoading, setStatsLoading] = useState(false)
+  const [auditWs, setAuditWs] = useState<Workspace | null>(null)
+  const [audits, setAudits] = useState<WorkspaceAuditLog[]>([])
+  const [auditsLoading, setAuditsLoading] = useState(false)
 
   useEffect(() => {
     if (!statWs) return
@@ -63,6 +98,28 @@ export function WorkspacesPage() {
       alive = false
     }
   }, [statWs])
+
+  useEffect(() => {
+    if (!auditWs) return
+    let alive = true
+    setAuditsLoading(true)
+    listWorkspaceAuditLogs(auditWs.id, { limit: 100 })
+      .then((page) => {
+        if (alive) setAudits(page.items ?? [])
+      })
+      .catch(() => {
+        if (alive) {
+          setAudits([])
+          message.error('加载审计日志失败')
+        }
+      })
+      .finally(() => {
+        if (alive) setAuditsLoading(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [auditWs])
 
   const columns: TableColumnsType<Workspace> = [
     { title: 'ID', dataIndex: 'id', width: 80, render: (v) => <Mono>{v}</Mono> },
@@ -94,11 +151,16 @@ export function WorkspacesPage() {
     {
       title: '操作',
       key: 'action',
-      width: 110,
+      width: 180,
       render: (_, row) => (
-        <Button type="link" size="small" onClick={() => setStatWs(row)}>
-          成员统计
-        </Button>
+        <Space size="small">
+          <Button type="link" size="small" onClick={() => setStatWs(row)}>
+            成员统计
+          </Button>
+          <Button type="link" size="small" onClick={() => setAuditWs(row)}>
+            审计日志
+          </Button>
+        </Space>
       ),
     },
   ]
@@ -167,6 +229,22 @@ export function WorkspacesPage() {
           dataSource={stats}
           rowKey="user_id"
           loading={statsLoading}
+          size="small"
+          pagination={false}
+        />
+      </Drawer>
+      <Drawer
+        title={auditWs ? `审计日志 · ${auditWs.name}` : '审计日志'}
+        width={720}
+        open={!!auditWs}
+        onClose={() => setAuditWs(null)}
+        destroyOnClose
+      >
+        <Table<WorkspaceAuditLog>
+          columns={auditColumns}
+          dataSource={audits}
+          rowKey="id"
+          loading={auditsLoading}
           size="small"
           pagination={false}
         />

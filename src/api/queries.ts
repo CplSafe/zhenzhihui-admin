@@ -13,6 +13,7 @@ import type {
   Subscription,
   User,
   Workspace,
+  WorkspaceAuditLog,
   WorkspaceMemberStat,
 } from "@/types/domain";
 
@@ -75,6 +76,17 @@ export const listWorkspaceMembers = (id: number) =>
   http.get<unknown[]>(`/admin/workspaces/${id}/members`);
 export const listWorkspaceMemberStatistics = (id: number) =>
   http.get<WorkspaceMemberStat[]>(`/admin/workspaces/${id}/member-statistics`);
+export interface WorkspaceAuditLogParams extends Paginated {
+  action?: string;
+  actor_user_id?: number;
+}
+export const listWorkspaceAuditLogs = (
+  id: number,
+  params: WorkspaceAuditLogParams = {},
+) =>
+  http.get<ListPage<WorkspaceAuditLog>>(
+    `/admin/workspaces/${id}/audit-logs${qs(params)}`,
+  );
 
 export interface AITaskListParams extends Paginated {
   workspace_id?: number;

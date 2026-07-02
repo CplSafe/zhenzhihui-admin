@@ -85,6 +85,15 @@ export interface WorkspaceMemberStat {
   total_works: number;
 }
 
+// 空间审计日志(邀请/成员变更/转让/解散等操作留痕),对应后端 domain.WorkspaceAuditLog。
+export interface WorkspaceAuditLog extends MutableEntity {
+  workspace_id: number;
+  actor_user_id: number;
+  action: string;
+  target_user_id?: number;
+  payload_json?: unknown;
+}
+
 export interface AITask extends WorkspaceScoped {
   model_version_id: number;
   operation_code: string;
