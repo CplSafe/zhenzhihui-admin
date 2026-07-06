@@ -203,8 +203,10 @@ export interface GrantPlanResult {
 
 // 套餐,对应 domain.Plan。entitlements_json 含 models/concurrency/system_only/
 // is_trial_grant/trial_days,前端用 JSON 编辑器读写。
-// 订阅周期。后端校验同步:week/month/quarter/year(internal/admin/plans.go)。
-export type PlanPeriod = "week" | "month" | "quarter" | "year";
+// 订阅周期。后端校验同步(internal/admin/plans.go):week/month/quarter/year,
+// 或【纯数字天数字符串】(如 "90" = 90 天,范围 1-3650)——后台可手动填任意天数。
+// (string & {}) 保留字面量自动补全的同时允许任意天数串。
+export type PlanPeriod = "week" | "month" | "quarter" | "year" | (string & {});
 
 export interface Plan extends MutableEntity {
   code: string;

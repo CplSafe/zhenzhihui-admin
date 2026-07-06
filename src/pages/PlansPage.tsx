@@ -39,12 +39,25 @@ interface FormValues {
   code: string;
   name: string;
   period: PlanPeriod;
+  // period 选"custom"时的自定义天数(1-3650),提交时映射成纯数字串(如 "90")。
+  period_days?: number;
   price_cents: number;
   base_credits: number;
   discount_enabled: boolean;
   discount_percent: number;
   status: string;
   entitlements?: unknown;
+}
+
+// 把表单的 period/period_days 归一成后端的 period 字符串:custom → "90" 这类天数串。
+function resolvePeriod(v: FormValues): string {
+  return v.period === "custom" ? String(v.period_days ?? 30) : v.period;
+}
+
+// 周期展示:纯数字串显示"N天",枚举映射中文。
+function periodLabel(p: string): string {
+  if (/^\d+$/.test(p)) return `${p}天`;
+  return { week: "7天", month: "月", quarter: "季度", year: "年" }[p] ?? p;
 }
 
 // 判断套餐是否系统专用 / 注册赠送(从 entitlements_json 读),用于列表打标。
@@ -126,10 +139,12 @@ export function PlansPage() {
     if (editId && editId > 0) {
       const plan = data?.find((p) => p.id === editId);
       if (plan) {
+        const isDayCount = /^\d+$/.test(plan.period);
         form.setFieldsValue({
           code: plan.code,
           name: plan.name,
-          period: plan.period,
+          period: isDayCount ? "custom" : plan.period,
+          period_days: isDayCount ? Number(plan.period) : undefined,
           price_cents: plan.price_cents,
           base_credits: plan.base_credits,
           discount_enabled: plan.discount_enabled,
@@ -148,7 +163,7 @@ export function PlansPage() {
       isEdit
         ? updatePlan(editId!, {
             name: v.name,
-            period: v.period,
+            period: resolvePeriod(v),
             price_cents: v.price_cents,
             base_credits: v.base_credits,
             discount_enabled: v.discount_enabled,
@@ -159,7 +174,7 @@ export function PlansPage() {
         : createPlan({
             code: v.code,
             name: v.name,
-            period: v.period,
+            period: resolvePeriod(v),
             price_cents: v.price_cents,
             base_credits: v.base_credits,
             discount_enabled: v.discount_enabled,
@@ -196,7 +211,12 @@ export function PlansPage() {
       ),
     },
     { title: "名称", dataIndex: "name" },
-    { title: "周期", dataIndex: "period", width: 80 },
+    {
+      title: "周期",
+      dataIndex: "period",
+      width: 80,
+      render: (v) => periodLabel(v),
+    },
     {
       title: "价格",
       dataIndex: "price_cents",
@@ -321,8 +341,29 @@ export function PlansPage() {
                 { value: "month", label: "月" },
                 { value: "quarter", label: "季度" },
                 { value: "year", label: "年" },
+                { value: "custom", label: "自定义天数" },
               ]}
             />
+          </Form.Item>
+          <Form.Item noStyle shouldUpdate={(a, b) => a.period !== b.period}>
+            {({ getFieldValue }) =>
+              getFieldValue("period") === "custom" ? (
+                <Form.Item
+                  name="period_days"
+                  label="自定义天数"
+                  rules={[{ required: true, message: "请填写天数(1-3650)" }]}
+                  extra="到期时间 = 生效时间 + N 天;自动续费按 N 天为一个扣款周期。"
+                >
+                  <InputNumber
+                    min={1}
+                    max={3650}
+                    precision={0}
+                    style={{ width: "100%" }}
+                    placeholder="如 90"
+                  />
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
           <Form.Item
             name="price_cents"
