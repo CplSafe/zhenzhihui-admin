@@ -39,7 +39,10 @@ export type WorkspaceStatus =
 export type AssetType = "image" | "video" | "audio" | "prompt";
 export type AssetStatus = "pending" | "active" | "rejected" | "deleted";
 export type PaymentOrderType =
-  "credit_recharge" | "subscription_initial" | "subscription_renewal";
+  | "credit_recharge"
+  | "subscription_initial"
+  | "subscription_renewal"
+  | "subscription_upgrade";
 // 后端会扩展 kind 值,这里允许已知字面量之外的字符串。
 export type CreditLedgerKind =
   "freeze" | "settle" | "release" | "credit" | (string & {});

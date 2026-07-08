@@ -12,6 +12,7 @@ const TYPE_LABEL: Record<string, string> = {
   credit_recharge: '积分充值',
   subscription_initial: '订阅首期',
   subscription_renewal: '订阅续费',
+  subscription_upgrade: '订阅升级',
 }
 
 const columns: TableColumnsType<PaymentOrder> = [
@@ -103,6 +104,7 @@ export function PaymentOrdersPage() {
               { value: 'credit_recharge', label: '积分充值' },
               { value: 'subscription_initial', label: '订阅首期' },
               { value: 'subscription_renewal', label: '订阅续费' },
+              { value: 'subscription_upgrade', label: '订阅升级' },
             ]}
             onChange={(v) => setFilters((f) => ({ ...f, type: v }))}
           />
