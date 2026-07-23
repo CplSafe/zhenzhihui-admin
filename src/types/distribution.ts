@@ -6,6 +6,7 @@ export interface DistributionConfig {
 }
 
 export type DistributionAccountStatus = "enabled" | "disabled";
+export type DistributionSalesType = "company" | "bytedance";
 
 export type DistributionSettlementStatus =
   | "disabled"
@@ -26,6 +27,8 @@ export interface DistributionAccount {
   mobile?: string;
   nickname?: string;
   status: DistributionAccountStatus;
+  sales_type: DistributionSalesType;
+  customer_discount_bps: number;
   direct_rate_bps: number;
   indirect_rate_bps: number;
   balance_cents: number;

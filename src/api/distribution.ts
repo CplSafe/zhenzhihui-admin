@@ -6,17 +6,21 @@ import type {
   DistributionAccountStatus,
   DistributionCommission,
   DistributionConfig,
+  DistributionSalesType,
   DistributionSettlementStatus,
 } from "@/types/distribution";
 
 export interface DistributionAccountListParams extends PageParams {
   user_id?: number;
   status?: DistributionAccountStatus;
+  sales_type?: DistributionSalesType;
   keyword?: string;
 }
 
 export interface DistributionAccountCreateBody {
   user_id: number;
+  sales_type: DistributionSalesType;
+  customer_discount_bps: number;
   direct_rate_bps: number;
   indirect_rate_bps: number;
   remark?: string;

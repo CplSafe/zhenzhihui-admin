@@ -1,4 +1,19 @@
-import { App, Alert, Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from "antd";
+import {
+  App,
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
 import type { TableColumnsType } from "antd";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -17,6 +32,7 @@ import { Permission } from "@/types/admin";
 import type {
   DistributionAccount,
   DistributionAccountStatus,
+  DistributionSalesType,
 } from "@/types/distribution";
 import { fmtTime } from "@/utils/format";
 
@@ -37,6 +53,8 @@ function toPositiveInt(value: string): number | undefined {
 
 interface AccountFormValues {
   user_id: number;
+  sales_type: DistributionSalesType;
+  customer_discount_fold: number;
   direct_rate_percent: number;
   indirect_rate_percent: number;
   remark?: string;
@@ -49,6 +67,19 @@ function percentLabel(bps: number): string {
 function percentToBps(percent: number): number {
   return Math.round(percent * 100);
 }
+
+function discountLabel(bps: number): string {
+  return `${Number((bps / 1000).toFixed(3))} 折`;
+}
+
+function discountFoldToBps(fold: number): number {
+  return Math.round(fold * 1000);
+}
+
+const SALES_TYPE_LABEL: Record<DistributionSalesType, string> = {
+  company: "公司销售",
+  bytedance: "字节销售",
+};
 
 function userCell(userId: number, nickname?: string, mobile?: string) {
   return (
@@ -96,6 +127,8 @@ export function DistributionAccountsTab() {
   const startCreate = () => {
     form.resetFields();
     form.setFieldsValue({
+      sales_type: "company",
+      customer_discount_fold: 10,
       direct_rate_percent: 50,
       indirect_rate_percent: 10,
     });
@@ -105,6 +138,8 @@ export function DistributionAccountsTab() {
   const startEdit = (account: DistributionAccount) => {
     form.setFieldsValue({
       user_id: account.user_id,
+      sales_type: account.sales_type,
+      customer_discount_fold: account.customer_discount_bps / 1000,
       direct_rate_percent: account.direct_rate_bps / 100,
       indirect_rate_percent: account.indirect_rate_bps / 100,
       remark: account.remark,
@@ -118,14 +153,22 @@ export function DistributionAccountsTab() {
         direct_rate_bps: percentToBps(values.direct_rate_percent),
         indirect_rate_bps: percentToBps(values.indirect_rate_percent),
       };
+      const salesConfig = {
+        sales_type: values.sales_type,
+        customer_discount_bps: discountFoldToBps(
+          values.customer_discount_fold,
+        ),
+      };
       const remark = values.remark?.trim();
       return isEdit
         ? updateDistributionAccount(editId!, {
+            ...salesConfig,
             ...rates,
             remark: remark ?? "",
           })
         : createDistributionAccount({
             user_id: values.user_id,
+            ...salesConfig,
             ...rates,
             ...(remark ? { remark } : {}),
           });
@@ -144,6 +187,22 @@ export function DistributionAccountsTab() {
       key: "user",
       width: 220,
       render: (_, row) => userCell(row.user_id, row.nickname, row.mobile),
+    },
+    {
+      title: "销售类型",
+      dataIndex: "sales_type",
+      width: 110,
+      render: (value: DistributionSalesType) => (
+        <Tag>{SALES_TYPE_LABEL[value]}</Tag>
+      ),
+    },
+    {
+      title: "客户订阅折扣",
+      dataIndex: "customer_discount_bps",
+      width: 130,
+      render: (value: number) => (
+        <span className="tnum">{discountLabel(value)}</span>
+      ),
     },
     {
       title: "直推比例",
@@ -214,8 +273,8 @@ export function DistributionAccountsTab() {
               title={row.status === "enabled" ? "停用分销账号？" : "启用分销账号？"}
               description={
                 row.status === "enabled"
-                  ? "停用后，该账号的新订单不再产生佣金。"
-                  : "启用后，新订单将按当前比例结算佣金。"
+                  ? "停用后，新订单不再产生佣金，其直属客户也不再享受销售折扣。"
+                  : "启用后，新订单按当前比例结算佣金，直属客户恢复销售折扣。"
               }
               onConfirm={() =>
                 row.status === "enabled"
@@ -248,7 +307,7 @@ export function DistributionAccountsTab() {
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
       <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>
         <Typography.Text type="secondary">
-          共 {total} 个分销账号；直推比例用于本人邀请的客户，间推比例用于下级邀请的客户。当前版本仅记账，暂不提供提现或打款。
+          共 {total} 个分销账号；客户订阅折扣会叠加在套餐活动价上，直推/间推比例仅用于利润返佣。当前版本仅记账，暂不提供提现或打款。
         </Typography.Text>
         <Can permission={Permission.REFERRAL_WRITE}>
           <Button type="primary" onClick={startCreate}>
@@ -283,6 +342,18 @@ export function DistributionAccountsTab() {
           />
           <Select
             allowClear
+            placeholder="销售类型"
+            style={{ width: 140 }}
+            options={[
+              { value: "company", label: "公司销售" },
+              { value: "bytedance", label: "字节销售" },
+            ]}
+            onChange={(value: DistributionSalesType | undefined) =>
+              setFilters((current) => ({ ...current, sales_type: value }))
+            }
+          />
+          <Select
+            allowClear
             placeholder="账号状态"
             style={{ width: 140 }}
             options={[
@@ -312,7 +383,7 @@ export function DistributionAccountsTab() {
           dataSource={items}
           loading={loading}
           pagination={pagination}
-          scroll={{ x: 1320 }}
+          scroll={{ x: 1560 }}
         />
       </Card>
 
@@ -341,6 +412,41 @@ export function DistributionAccountsTab() {
               disabled={isEdit}
               style={{ width: "100%" }}
               placeholder="请输入本地用户 ID"
+            />
+          </Form.Item>
+          <Form.Item
+            name="sales_type"
+            label="销售类型"
+            rules={[{ required: true, message: "请选择销售类型" }]}
+          >
+            <Select
+              options={[
+                { value: "company", label: "公司销售" },
+                { value: "bytedance", label: "字节销售" },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item
+            name="customer_discount_fold"
+            label="客户订阅折扣"
+            rules={[
+              { required: true, message: "请输入客户订阅折扣" },
+              {
+                type: "number",
+                min: 0.001,
+                max: 10,
+                message: "折扣须在 0.001 折到 10 折之间",
+              },
+            ]}
+            extra="在套餐活动价基础上继续折扣；9 折对应后端 9000，10 折表示不追加优惠。"
+          >
+            <InputNumber
+              min={0.001}
+              max={10}
+              precision={3}
+              step={0.1}
+              suffix="折"
+              style={{ width: "100%" }}
             />
           </Form.Item>
           <Form.Item
