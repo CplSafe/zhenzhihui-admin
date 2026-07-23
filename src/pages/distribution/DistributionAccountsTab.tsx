@@ -40,6 +40,7 @@ const LIST_QUERY_KEY = "admin-distribution-accounts";
 interface AccountFilters {
   user_id?: number;
   status?: DistributionAccountStatus;
+  sales_type?: DistributionSalesType;
   keyword?: string;
 }
 
@@ -76,10 +77,28 @@ function discountFoldToBps(fold: number): number {
   return Math.round(fold * 1000);
 }
 
-const SALES_TYPE_LABEL: Record<DistributionSalesType, string> = {
-  company: "公司销售",
-  bytedance: "字节销售",
-};
+const SALES_TYPE_OPTIONS = [
+  { value: "company", label: "公司销售" },
+  { value: "bytedance", label: "字节销售" },
+  { value: "partner", label: "合作伙伴" },
+] satisfies Array<{ value: DistributionSalesType; label: string }>;
+
+function salesTypeLabel(value: DistributionSalesType): string {
+  return (
+    SALES_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value
+  );
+}
+
+function toggleDescription(account: DistributionAccount): string {
+  if (account.sales_type === "partner") {
+    return account.status === "enabled"
+      ? "停用后，该账号的新订单不再产生佣金。"
+      : "启用后，该账号的新订单将按当前比例结算佣金。";
+  }
+  return account.status === "enabled"
+    ? "停用后，新订单不再产生佣金，其直属客户也不再享受销售折扣。"
+    : "启用后，新订单按当前比例结算佣金，直属客户恢复销售折扣。";
+}
 
 function userCell(userId: number, nickname?: string, mobile?: string) {
   return (
@@ -97,6 +116,7 @@ function userCell(userId: number, nickname?: string, mobile?: string) {
 export function DistributionAccountsTab() {
   const { message } = App.useApp();
   const [form] = Form.useForm<AccountFormValues>();
+  const selectedSalesType = Form.useWatch("sales_type", form);
   const [filters, setFilters] = useState<AccountFilters>({});
   const {
     editId,
@@ -139,7 +159,10 @@ export function DistributionAccountsTab() {
     form.setFieldsValue({
       user_id: account.user_id,
       sales_type: account.sales_type,
-      customer_discount_fold: account.customer_discount_bps / 1000,
+      customer_discount_fold:
+        account.sales_type === "partner"
+          ? 10
+          : account.customer_discount_bps / 1000,
       direct_rate_percent: account.direct_rate_bps / 100,
       indirect_rate_percent: account.indirect_rate_bps / 100,
       remark: account.remark,
@@ -155,9 +178,10 @@ export function DistributionAccountsTab() {
       };
       const salesConfig = {
         sales_type: values.sales_type,
-        customer_discount_bps: discountFoldToBps(
-          values.customer_discount_fold,
-        ),
+        customer_discount_bps:
+          values.sales_type === "partner"
+            ? 10000
+            : discountFoldToBps(values.customer_discount_fold),
       };
       const remark = values.remark?.trim();
       return isEdit
@@ -193,16 +217,19 @@ export function DistributionAccountsTab() {
       dataIndex: "sales_type",
       width: 110,
       render: (value: DistributionSalesType) => (
-        <Tag>{SALES_TYPE_LABEL[value]}</Tag>
+        <Tag>{salesTypeLabel(value)}</Tag>
       ),
     },
     {
       title: "客户订阅折扣",
       dataIndex: "customer_discount_bps",
       width: 130,
-      render: (value: number) => (
-        <span className="tnum">{discountLabel(value)}</span>
-      ),
+      render: (value: number, row) =>
+        row.sales_type === "partner" ? (
+          <Typography.Text type="secondary">不参与折上折</Typography.Text>
+        ) : (
+          <span className="tnum">{discountLabel(value)}</span>
+        ),
     },
     {
       title: "直推比例",
@@ -271,11 +298,7 @@ export function DistributionAccountsTab() {
             </Button>
             <Popconfirm
               title={row.status === "enabled" ? "停用分销账号？" : "启用分销账号？"}
-              description={
-                row.status === "enabled"
-                  ? "停用后，新订单不再产生佣金，其直属客户也不再享受销售折扣。"
-                  : "启用后，新订单按当前比例结算佣金，直属客户恢复销售折扣。"
-              }
+              description={toggleDescription(row)}
               onConfirm={() =>
                 row.status === "enabled"
                   ? disableMut.mutate(row.id)
@@ -307,7 +330,10 @@ export function DistributionAccountsTab() {
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
       <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>
         <Typography.Text type="secondary">
-          共 {total} 个分销账号；客户订阅折扣会叠加在套餐活动价上，直推/间推比例仅用于利润返佣。当前版本仅记账，暂不提供提现或打款。
+          {`共 ${total} 个分销账号；` +
+            "公司/字节销售的客户订阅折扣会叠加在套餐活动价上，" +
+            "合作伙伴不参与折上折；直推/间推比例仅用于利润返佣。" +
+            "当前版本仅记账，暂不提供提现或打款。"}
         </Typography.Text>
         <Can permission={Permission.REFERRAL_WRITE}>
           <Button type="primary" onClick={startCreate}>
@@ -344,10 +370,7 @@ export function DistributionAccountsTab() {
             allowClear
             placeholder="销售类型"
             style={{ width: 140 }}
-            options={[
-              { value: "company", label: "公司销售" },
-              { value: "bytedance", label: "字节销售" },
-            ]}
+            options={SALES_TYPE_OPTIONS}
             onChange={(value: DistributionSalesType | undefined) =>
               setFilters((current) => ({ ...current, sales_type: value }))
             }
@@ -404,7 +427,11 @@ export function DistributionAccountsTab() {
             name="user_id"
             label="用户 ID"
             rules={[{ required: true, message: "请输入用户 ID" }]}
-            extra={isEdit ? "分销账号绑定的用户不可更换。" : "仅指定用户可获得分销佣金。"}
+            extra={
+              isEdit
+                ? "分销账号绑定的用户不可更换。"
+                : "仅指定用户可获得分销佣金。"
+            }
           >
             <InputNumber
               min={1}
@@ -420,10 +447,12 @@ export function DistributionAccountsTab() {
             rules={[{ required: true, message: "请选择销售类型" }]}
           >
             <Select
-              options={[
-                { value: "company", label: "公司销售" },
-                { value: "bytedance", label: "字节销售" },
-              ]}
+              options={SALES_TYPE_OPTIONS}
+              onChange={(value: DistributionSalesType) => {
+                if (value === "partner") {
+                  form.setFieldValue("customer_discount_fold", 10);
+                }
+              }}
             />
           </Form.Item>
           <Form.Item
@@ -438,7 +467,12 @@ export function DistributionAccountsTab() {
                 message: "折扣须在 0.001 折到 10 折之间",
               },
             ]}
-            extra="在套餐活动价基础上继续折扣；9 折对应后端 9000，10 折表示不追加优惠。"
+            extra={
+              selectedSalesType === "partner"
+                ? "合作伙伴不参与折上折，客户订阅折扣固定为 10 折。"
+                : "在套餐活动价基础上继续折扣；9 折对应后端 9000，" +
+                  "10 折表示不追加优惠。"
+            }
           >
             <InputNumber
               min={0.001}
@@ -446,6 +480,7 @@ export function DistributionAccountsTab() {
               precision={3}
               step={0.1}
               suffix="折"
+              disabled={selectedSalesType === "partner"}
               style={{ width: "100%" }}
             />
           </Form.Item>

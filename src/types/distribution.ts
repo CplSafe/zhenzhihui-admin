@@ -6,7 +6,7 @@ export interface DistributionConfig {
 }
 
 export type DistributionAccountStatus = "enabled" | "disabled";
-export type DistributionSalesType = "company" | "bytedance";
+export type DistributionSalesType = "company" | "bytedance" | "partner";
 
 export type DistributionSettlementStatus =
   | "disabled"
