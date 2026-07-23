@@ -19,6 +19,8 @@ export const ApiCode = {
   NOT_ADMIN: "NOT_ADMIN",
   ADMIN_DISABLED: "ADMIN_DISABLED",
   ADMIN_PERMISSION_DENIED: "ADMIN_PERMISSION_DENIED",
+  STORED_DISTRIBUTION_CONFIG_INVALID:
+    "STORED_DISTRIBUTION_CONFIG_INVALID",
 } as const;
 
 export type ApiCodeString = (typeof ApiCode)[keyof typeof ApiCode];

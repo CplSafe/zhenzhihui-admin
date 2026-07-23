@@ -142,7 +142,7 @@ export const menuConfig: MenuItemConfig[] = [
   {
     key: "referral",
     path: "/referral",
-    label: "销售数据",
+    label: "分销管理",
     icon: <TeamOutlined />,
     permission: Permission.REFERRAL_READ,
   },

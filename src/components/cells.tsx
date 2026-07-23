@@ -25,6 +25,8 @@ export function Mono({ children }: { children?: React.ReactNode }) {
 const STATUS_COLOR: Record<string, string> = {
   // 通用成功/启用
   succeeded: "green",
+  settled: "green",
+  credited: "green",
   active: "green",
   enabled: "green",
   paid: "green",
@@ -37,8 +39,13 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "gold",
   // 失败/禁用
   failed: "red",
+  blocked: "red",
   payment_failed: "red",
   rejected: "red",
+  ineligible: "default",
+  zero: "default",
+  no_profit: "default",
+  no_referrer: "default",
   disabled: "default",
   canceled: "default",
   deleted: "default",
