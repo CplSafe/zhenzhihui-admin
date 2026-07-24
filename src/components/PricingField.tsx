@@ -52,16 +52,6 @@ type Tier = (typeof TIERS)[number];
 const SECOND_TIERS = ["480P", "720P", "1080P"] as const;
 type SecondTier = (typeof SECOND_TIERS)[number];
 
-const USAGE_COST_ROWS = [
-  { key: "input", label: "输入 token" },
-  { key: "cached_input", label: "缓存输入 token" },
-  { key: "text_input", label: "图片模型：文本输入 token" },
-  { key: "cached_text_input", label: "图片模型：缓存文本输入 token" },
-  { key: "image_input", label: "图片模型：图片输入 token" },
-  { key: "cached_image_input", label: "图片模型：缓存图片输入 token" },
-  { key: "output", label: "输出 token" },
-] as const;
-
 function FieldLabel({ text }: { text: string }) {
   return (
     <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{text}</div>
@@ -78,13 +68,6 @@ export function PricingField({
   const isVideo = capability === "video";
   const tierTable = pricing.credits_per_thousand_tokens_by_tier ?? {};
   const secondTable = pricing.credits_per_billable_second_by_resolution ?? {};
-  const providerTierTable =
-    pricing.provider_cost_cents_per_million_tokens_by_tier ?? {};
-  const providerSecondTable =
-    pricing.provider_cost_cents_per_billable_second_by_resolution ?? {};
-  const providerUsageTable =
-    pricing.provider_cost_cents_per_million_tokens_by_usage ?? {};
-  const providerCurrency = pricing.provider_cost_currency ?? "CNY";
 
   // 高级 JSON 只承载"非常用"字段,避免与上面结构化框双向打架。
   const advanced: Record<string, unknown> = {};
@@ -144,47 +127,6 @@ export function PricingField({
     if (Object.keys(nextTable).length === 0)
       delete next.credits_per_billable_second_by_resolution;
     else next.credits_per_billable_second_by_resolution = nextTable;
-    emit(next);
-  };
-
-  const setProviderTier = (
-    tier: Tier,
-    sub: keyof TierTokenRate,
-    v: number | null,
-  ) => {
-    const table: Record<string, TierTokenRate> = { ...providerTierTable };
-    const row = { ...(table[tier] ?? {}) };
-    if (v === null) delete row[sub];
-    else row[sub] = v;
-    if (row.no_video === undefined && row.with_video === undefined)
-      delete table[tier];
-    else table[tier] = row;
-    const next: Pricing = { ...pricing };
-    if (Object.keys(table).length === 0)
-      delete next.provider_cost_cents_per_million_tokens_by_tier;
-    else next.provider_cost_cents_per_million_tokens_by_tier = table;
-    emit(next);
-  };
-
-  const setProviderSecondRate = (tier: SecondTier, v: number | null) => {
-    const table = { ...providerSecondTable };
-    if (v === null) delete table[tier];
-    else table[tier] = v;
-    const next: Pricing = { ...pricing };
-    if (Object.keys(table).length === 0)
-      delete next.provider_cost_cents_per_billable_second_by_resolution;
-    else next.provider_cost_cents_per_billable_second_by_resolution = table;
-    emit(next);
-  };
-
-  const setProviderUsageRate = (key: string, v: number | null) => {
-    const table = { ...providerUsageTable };
-    if (v === null) delete table[key];
-    else table[key] = v;
-    const next: Pricing = { ...pricing };
-    if (Object.keys(table).length === 0)
-      delete next.provider_cost_cents_per_million_tokens_by_usage;
-    else next.provider_cost_cents_per_million_tokens_by_usage = table;
     emit(next);
   };
 
@@ -395,217 +337,12 @@ export function PricingField({
   function renderFinanceRates() {
     return (
       <div style={{ marginTop: 16 }}>
-        <FieldLabel text="后台经营分析（不参与用户扣费）" />
-        <Space size="large" wrap>
-          <label>
-            <FieldLabel text="供应商合同币种" />
-            <Select
-              style={{ width: 120 }}
-              value={providerCurrency}
-              options={[
-                { value: "CNY", label: "CNY 人民币" },
-                { value: "USD", label: "USD 美元" },
-              ]}
-              onChange={(currency) =>
-                emit({ ...pricing, provider_cost_currency: currency })
-              }
-            />
-          </label>
-          {providerCurrency !== "CNY" && (
-            <label>
-              <FieldLabel text="折人民币汇率（百万分比；USD/CNY 7.30 填 7300000）" />
-              <InputNumber
-                min={0}
-                precision={0}
-                style={{ width: 260 }}
-                value={pricing.provider_cost_to_cny_ppm}
-                onChange={(v) => setRate("provider_cost_to_cny_ppm", v)}
-                placeholder="如 7300000"
-              />
-            </label>
-          )}
-          <label>
-            <FieldLabel text={`供应商成本：总 token 兜底价（${providerCurrency} 分 / 百万 token）`} />
-            <InputNumber
-              min={0}
-              precision={0}
-              style={{ width: 240 }}
-              value={pricing.provider_cost_cents_per_million_tokens}
-              onChange={(v) =>
-                setRate("provider_cost_cents_per_million_tokens", v)
-              }
-              placeholder="Fast ¥37 填 3700"
-            />
-          </label>
-          {isVideo && (
-            <label>
-              <FieldLabel text="供应商成本：含输入视频（分 / 百万 token）" />
-              <InputNumber
-                min={0}
-                precision={0}
-                style={{ width: 240 }}
-                value={
-                  pricing.provider_cost_cents_per_million_tokens_with_video
-                }
-                onChange={(v) =>
-                  setRate(
-                    "provider_cost_cents_per_million_tokens_with_video",
-                    v,
-                  )
-                }
-                placeholder="Fast ¥22 填 2200"
-              />
-            </label>
-          )}
-          {!isVideo && (
-            <label>
-              <FieldLabel text={`供应商成本：每张成功图片（${providerCurrency} 分 / 张）`} />
-              <InputNumber
-                min={0}
-                precision={0}
-                style={{ width: 240 }}
-                value={pricing.provider_cost_cents_per_successful_output}
-                onChange={(v) =>
-                  setRate("provider_cost_cents_per_successful_output", v)
-                }
-                placeholder="Seedream ¥0.22 填 22"
-              />
-            </label>
-          )}
-          <label>
-            <FieldLabel text="积分收入折算（分 / 千积分）" />
-            <InputNumber
-              min={0}
-              precision={0}
-              style={{ width: 240 }}
-              value={pricing.revenue_cents_per_thousand_credits}
-              onChange={(v) =>
-                setRate("revenue_cents_per_thousand_credits", v)
-              }
-              placeholder="如 ¥80 填 8000"
-            />
-          </label>
-        </Space>
-        {isVideo && (
-          <Collapse
-            ghost
-            size="small"
-            items={[
-              {
-                key: "provider-token-tiers",
-                label: "Seedance 2.0 上游成本（按清晰度 × 输入视频分档）",
-                children: (
-                  <Table<{ tier: Tier }>
-                    size="small"
-                    pagination={false}
-                    rowKey="tier"
-                    dataSource={TIERS.map((tier) => ({ tier }))}
-                    columns={[
-                      { title: "清晰度", dataIndex: "tier", width: 90 },
-                      {
-                        title: "不含输入视频（分/百万 token）",
-                        render: (_, r) => (
-                          <InputNumber
-                            min={0}
-                            precision={0}
-                            value={providerTierTable[r.tier]?.no_video}
-                            onChange={(v) =>
-                              setProviderTier(r.tier, "no_video", v)
-                            }
-                          />
-                        ),
-                      },
-                      {
-                        title: "含输入视频（分/百万 token）",
-                        render: (_, r) => (
-                          <InputNumber
-                            min={0}
-                            precision={0}
-                            value={providerTierTable[r.tier]?.with_video}
-                            onChange={(v) =>
-                              setProviderTier(r.tier, "with_video", v)
-                            }
-                          />
-                        ),
-                      },
-                    ]}
-                  />
-                ),
-              },
-              {
-                key: "provider-second-tiers",
-                label: "HappyHorse 上游成本（按清晰度每秒）",
-                children: (
-                  <Table<{ tier: SecondTier }>
-                    size="small"
-                    pagination={false}
-                    rowKey="tier"
-                    dataSource={SECOND_TIERS.map((tier) => ({ tier }))}
-                    columns={[
-                      { title: "清晰度", dataIndex: "tier", width: 90 },
-                      {
-                        title: "分 / 秒",
-                        render: (_, r) => (
-                          <InputNumber
-                            min={0}
-                            precision={0}
-                            value={providerSecondTable[r.tier]}
-                            onChange={(v) =>
-                              setProviderSecondRate(r.tier, v)
-                            }
-                          />
-                        ),
-                      },
-                    ]}
-                  />
-                ),
-              },
-            ]}
-          />
-        )}
-        {!isVideo && (
-          <Collapse
-            ghost
-            size="small"
-            items={[
-              {
-                key: "provider-usage-tokens",
-                label: "OpenAI / Seed 上游成本（按 usage 分项 token）",
-                children: (
-                  <Table<(typeof USAGE_COST_ROWS)[number]>
-                    size="small"
-                    pagination={false}
-                    rowKey="key"
-                    dataSource={[...USAGE_COST_ROWS]}
-                    columns={[
-                      { title: "usage 维度", dataIndex: "label" },
-                      {
-                        title: `${providerCurrency} 分 / 百万 token`,
-                        render: (_, row) => (
-                          <InputNumber
-                            min={0}
-                            precision={0}
-                            value={providerUsageTable[row.key]}
-                            onChange={(v) => setProviderUsageRate(row.key, v)}
-                            placeholder="按供应商合同价填写"
-                          />
-                        ),
-                      },
-                    ]}
-                  />
-                ),
-              },
-            ]}
-          />
-        )}
         <Typography.Paragraph
           type="secondary"
           style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
         >
-          视频：Fast / Mini 用总 token 两档，Seedance 2.0 使用清晰度分档，
-          HappyHorse 使用每秒分档。图片：Seedream 填每张成功图片；OpenAI / Seed
-          填 usage 分项价格。OpenAI 按美元合同价填写，并维护实际结算汇率。
-          积分收入 = 实扣积分 × 收入折算价；未配置时不显示利润。
+          经营分析无需配置：系统按模型 ID 自动匹配官方上游价格，固定按 1 积分 =
+          ¥0.02 计算收入；HappyHorse 使用本项目四折合同价。
         </Typography.Paragraph>
       </div>
     );
