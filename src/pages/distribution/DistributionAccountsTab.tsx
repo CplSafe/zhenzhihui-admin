@@ -53,7 +53,8 @@ function toPositiveInt(value: string): number | undefined {
 }
 
 interface AccountFormValues {
-  user_id: number;
+  user_id?: number;
+  mobile?: string;
   sales_type: DistributionSalesType;
   customer_discount_fold: number;
   direct_rate_percent: number;
@@ -156,6 +157,7 @@ export function DistributionAccountsTab() {
   };
 
   const startEdit = (account: DistributionAccount) => {
+    form.resetFields();
     form.setFieldsValue({
       user_id: account.user_id,
       sales_type: account.sales_type,
@@ -184,18 +186,23 @@ export function DistributionAccountsTab() {
             : discountFoldToBps(values.customer_discount_fold),
       };
       const remark = values.remark?.trim();
-      return isEdit
-        ? updateDistributionAccount(editId!, {
-            ...salesConfig,
-            ...rates,
-            remark: remark ?? "",
-          })
-        : createDistributionAccount({
-            user_id: values.user_id,
-            ...salesConfig,
-            ...rates,
-            ...(remark ? { remark } : {}),
-          });
+      if (isEdit) {
+        return updateDistributionAccount(editId!, {
+          ...salesConfig,
+          ...rates,
+          remark: remark ?? "",
+        });
+      }
+      const mobile = values.mobile?.trim();
+      if (!mobile) {
+        throw new Error("请输入手机号");
+      }
+      return createDistributionAccount({
+        mobile,
+        ...salesConfig,
+        ...rates,
+        ...(remark ? { remark } : {}),
+      });
     },
     onSuccess: () => {
       message.success(isEdit ? "已更新分销账号" : "已开通分销账号");
@@ -423,24 +430,33 @@ export function DistributionAccountsTab() {
           layout="vertical"
           onFinish={(values) => saveMut.mutate(values)}
         >
-          <Form.Item
-            name="user_id"
-            label="用户 ID"
-            rules={[{ required: true, message: "请输入用户 ID" }]}
-            extra={
-              isEdit
-                ? "分销账号绑定的用户不可更换。"
-                : "仅指定用户可获得分销佣金。"
-            }
-          >
-            <InputNumber
-              min={1}
-              precision={0}
-              disabled={isEdit}
-              style={{ width: "100%" }}
-              placeholder="请输入本地用户 ID"
-            />
-          </Form.Item>
+          {isEdit ? (
+            <Form.Item
+              name="user_id"
+              label="绑定用户 ID"
+              extra="分销账号绑定的用户不可更换。"
+            >
+              <InputNumber disabled style={{ width: "100%" }} />
+            </Form.Item>
+          ) : (
+            <Form.Item
+              name="mobile"
+              label="用户手机号"
+              rules={[
+                { required: true, message: "请输入手机号" },
+                { max: 32, message: "手机号最多 32 个字符" },
+              ]}
+              extra="请输入已注册用户的手机号；系统会精确匹配，不会自动创建用户。"
+            >
+              <Input
+                allowClear
+                autoComplete="tel"
+                inputMode="tel"
+                maxLength={32}
+                placeholder="例如：13800138000"
+              />
+            </Form.Item>
+          )}
           <Form.Item
             name="sales_type"
             label="销售类型"

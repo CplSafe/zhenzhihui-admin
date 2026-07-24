@@ -17,8 +17,7 @@ export interface DistributionAccountListParams extends PageParams {
   keyword?: string;
 }
 
-export interface DistributionAccountCreateBody {
-  user_id: number;
+interface DistributionAccountMutableBody {
   sales_type: DistributionSalesType;
   customer_discount_bps: number;
   direct_rate_bps: number;
@@ -26,10 +25,13 @@ export interface DistributionAccountCreateBody {
   remark?: string;
 }
 
-export type DistributionAccountUpdateBody = Omit<
-  DistributionAccountCreateBody,
-  "user_id"
->;
+export type DistributionAccountCreateBody = DistributionAccountMutableBody &
+  (
+    | { mobile: string; user_id?: never }
+    | { user_id: number; mobile?: never }
+  );
+
+export type DistributionAccountUpdateBody = DistributionAccountMutableBody;
 
 export interface DistributionCommissionListParams extends PageParams {
   beneficiary_user_id?: number;
