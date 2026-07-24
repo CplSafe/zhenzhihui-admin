@@ -107,6 +107,15 @@ export interface AITask extends WorkspaceScoped {
   prompt?: string;
   estimated_cost: number;
   actual_cost: number;
+  usage_total_tokens?: number | null;
+  usage_input_tokens?: number | null;
+  usage_cached_tokens?: number | null;
+  usage_output_tokens?: number | null;
+  generated_outputs?: number | null;
+  has_input_video: boolean;
+  provider_cost_cents?: number | null;
+  credit_revenue_cents?: number | null;
+  profit_cents?: number | null;
   error_message?: string;
   // 仅详情接口 GET /admin/ai/tasks/:id 返回的大字段。
   request_json?: unknown;
@@ -318,6 +327,17 @@ export interface Pricing {
   credits_per_billable_second_by_resolution?: Record<string, number>;
   // Seedance 这类按 token 后置计费、单价随分辨率×含视频跳变的视频模型查表单价(积分/千 token)。
   credits_per_thousand_tokens_by_tier?: Record<string, TierTokenRate>;
+  // 后台经营分析：供应商成本（分/百万总 token）与积分收入折算（分/千积分）。
+  provider_cost_cents_per_million_tokens?: number;
+  provider_cost_currency?: string;
+  provider_cost_to_cny_ppm?: number;
+  provider_cost_cents_per_million_tokens_with_video?: number;
+  provider_cost_cents_per_million_tokens_by_tier?: Record<string, TierTokenRate>;
+  provider_cost_cents_per_million_tokens_by_usage?: Record<string, number>;
+  provider_cost_cents_per_successful_output?: number;
+  provider_cost_cents_per_successful_output_by_variant?: Record<string, number>;
+  provider_cost_cents_per_billable_second_by_resolution?: Record<string, number>;
+  revenue_cents_per_thousand_credits?: number;
 }
 
 // 单个分辨率档的 token 单价(积分/千 token),按输入是否含视频区分。

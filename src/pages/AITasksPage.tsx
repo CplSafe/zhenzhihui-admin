@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Button, Drawer, Descriptions, Input, Select, Space } from 'antd'
+import { Button, Drawer, Descriptions, Input, Select, Space, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { ListPageShell } from '@/components/ListPageShell'
-import { Count, Mono, StatusTag } from '@/components/cells'
+import { Count, Money, Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
 import { getAITask, listAITasks } from '@/api/queries'
 import type { ApiError } from '@/types/api'
@@ -70,16 +70,38 @@ export function AITasksPage() {
       render: (v) => <StatusTag status={v} />,
     },
     {
-      title: '预估',
-      dataIndex: 'estimated_cost',
-      width: 90,
+      title: '实扣积分',
+      dataIndex: 'actual_cost',
+      width: 110,
       render: (v) => <Count value={v} />,
     },
     {
-      title: '实际',
-      dataIndex: 'actual_cost',
-      width: 90,
-      render: (v) => <Count value={v} />,
+      title: '积分收入',
+      dataIndex: 'credit_revenue_cents',
+      width: 110,
+      render: (v) => <Money cents={v} />,
+    },
+    {
+      title: '供应商成本',
+      dataIndex: 'provider_cost_cents',
+      width: 120,
+      render: (v) => <Money cents={v} />,
+    },
+    {
+      title: '毛利润',
+      dataIndex: 'profit_cents',
+      width: 110,
+      render: (v: number | null | undefined) => (
+        <span
+          style={
+            v !== undefined && v !== null && v < 0
+              ? { color: '#cf1322' }
+              : undefined
+          }
+        >
+          <Money cents={v} />
+        </span>
+      ),
     },
     {
       title: '创建时间',
@@ -181,6 +203,26 @@ export function AITasksPage() {
             <Descriptions.Item label="预估 / 实际">
               <Count value={detail.data.estimated_cost} /> /{' '}
               <Count value={detail.data.actual_cost} />
+            </Descriptions.Item>
+            <Descriptions.Item label="上游用量">
+              <Count value={detail.data.usage_total_tokens} /> token
+              {detail.data.has_input_video ? ' · 含输入视频' : ''}
+              {(detail.data.usage_input_tokens != null ||
+                detail.data.usage_output_tokens != null) && (
+                <Typography.Text type="secondary">
+                  {' '}
+                  （输入 <Count value={detail.data.usage_input_tokens} /> / 缓存{' '}
+                  <Count value={detail.data.usage_cached_tokens} /> / 输出{' '}
+                  <Count value={detail.data.usage_output_tokens} />）
+                </Typography.Text>
+              )}
+              {detail.data.generated_outputs != null &&
+                ` · 成功输出 ${detail.data.generated_outputs} 张`}
+            </Descriptions.Item>
+            <Descriptions.Item label="积分收入 / 供应商成本 / 毛利润">
+              <Money cents={detail.data.credit_revenue_cents} /> /{' '}
+              <Money cents={detail.data.provider_cost_cents} /> /{' '}
+              <Money cents={detail.data.profit_cents} />
             </Descriptions.Item>
             <Descriptions.Item label="错误信息">
               {detail.data.error_message || '-'}
