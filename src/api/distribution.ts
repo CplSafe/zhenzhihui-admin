@@ -8,6 +8,8 @@ import type {
   DistributionConfig,
   DistributionSalesType,
   DistributionSettlementStatus,
+  DistributionWithdrawal,
+  DistributionWithdrawalStatus,
 } from "@/types/distribution";
 
 export interface DistributionAccountListParams extends PageParams {
@@ -38,6 +40,16 @@ export interface DistributionCommissionListParams extends PageParams {
   customer_user_id?: number;
   payment_order_id?: number;
   status?: DistributionSettlementStatus;
+}
+
+export interface DistributionWithdrawalListParams extends PageParams {
+  user_id?: number;
+  distributor_account_id?: number;
+  status?: DistributionWithdrawalStatus;
+}
+
+export interface DistributionWithdrawalReviewBody {
+  remark: string;
 }
 
 export const getDistributionConfig = () =>
@@ -83,4 +95,29 @@ export const listDistributionCommissions = (
 export const retryDistributionSettlement = (settlementId: number) =>
   http.post<unknown>(
     `/admin/distribution/settlements/${settlementId}/retry`,
+  );
+
+export const listDistributionWithdrawals = (
+  params: DistributionWithdrawalListParams = {},
+) =>
+  http.get<ListPage<DistributionWithdrawal>>(
+    `/admin/distribution/withdrawals${qs(params)}`,
+  );
+
+export const confirmDistributionWithdrawal = (
+  id: number,
+  body: DistributionWithdrawalReviewBody,
+) =>
+  http.post<DistributionWithdrawal>(
+    `/admin/distribution/withdrawals/${id}/confirm`,
+    body,
+  );
+
+export const rejectDistributionWithdrawal = (
+  id: number,
+  body: DistributionWithdrawalReviewBody,
+) =>
+  http.post<DistributionWithdrawal>(
+    `/admin/distribution/withdrawals/${id}/reject`,
+    body,
   );

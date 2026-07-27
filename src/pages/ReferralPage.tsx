@@ -3,6 +3,7 @@ import { DistributionAccountsTab } from "@/pages/distribution/DistributionAccoun
 import { DistributionCommissionsTab } from "@/pages/distribution/DistributionCommissionsTab";
 import { DistributionConfigTab } from "@/pages/distribution/DistributionConfigTab";
 import { ReferralBindingsTab } from "@/pages/distribution/ReferralBindingsTab";
+import { DistributionWithdrawalsTab } from "@/pages/distribution/DistributionWithdrawalsTab";
 
 export function ReferralPage() {
   return (
@@ -28,6 +29,11 @@ export function ReferralPage() {
             key: "commissions",
             label: "佣金流水",
             children: <DistributionCommissionsTab />,
+          },
+          {
+            key: "withdrawals",
+            label: "提现审批",
+            children: <DistributionWithdrawalsTab />,
           },
           {
             key: "bindings",

@@ -21,6 +21,12 @@ export type DistributionEntryStatus =
   | "zero"
   | "blocked";
 
+export type DistributionWithdrawalStatus = "pending" | "paid" | "rejected";
+export type DistributionWithdrawalMethodType =
+  | "alipay"
+  | "wechat"
+  | "bank_card";
+
 export interface DistributionAccount {
   id: number;
   user_id: number;
@@ -60,4 +66,26 @@ export interface DistributionCommission {
   settlement_status: DistributionSettlementStatus;
   order_type: PaymentOrderType;
   created_at: string;
+}
+
+export interface DistributionWithdrawal {
+  id: number;
+  distributor_account_id: number;
+  user_id: number;
+  withdrawal_method_id: number;
+  method_type: DistributionWithdrawalMethodType;
+  account_name: string;
+  account_number: string;
+  bank_name?: string;
+  amount_cents: number;
+  status: DistributionWithdrawalStatus;
+  reviewed_at?: string;
+  reviewed_by_admin_user_id?: number;
+  review_remark?: string;
+  mobile?: string;
+  nickname?: string;
+  email?: string;
+  deepauth_user_id: string;
+  created_at: string;
+  updated_at: string;
 }

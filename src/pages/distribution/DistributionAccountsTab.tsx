@@ -340,7 +340,7 @@ export function DistributionAccountsTab() {
           {`共 ${total} 个分销账号；` +
             "公司/字节销售的客户订阅折扣会叠加在套餐活动价上，" +
             "合作伙伴不参与折上折；直推/间推比例仅用于利润返佣。" +
-            "当前版本仅记账，暂不提供提现或打款。"}
+            "提现申请与打款结果请在“提现审批”中处理。"}
         </Typography.Text>
         <Can permission={Permission.REFERRAL_WRITE}>
           <Button type="primary" onClick={startCreate}>
