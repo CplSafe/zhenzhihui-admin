@@ -63,5 +63,6 @@ export function usePagedList<T, F extends object>({
     error,
     pagination,
     refetch,
+    resetPage: () => setPage(1),
   };
 }

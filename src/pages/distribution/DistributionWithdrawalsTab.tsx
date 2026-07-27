@@ -3,8 +3,10 @@ import {
   Alert,
   Button,
   Card,
+  Descriptions,
   Form,
   Input,
+  InputNumber,
   Modal,
   Select,
   Space,
@@ -64,14 +66,6 @@ const METHOD_LABEL: Record<DistributionWithdrawalMethodType, string> = {
   bank_card: "银行卡",
 };
 
-function toPositiveInt(value: string): number | undefined {
-  const normalized = value.trim();
-  const parsed = Number(normalized);
-  return normalized && Number.isInteger(parsed) && parsed > 0
-    ? parsed
-    : undefined;
-}
-
 function StatusCell({ status }: { status: DistributionWithdrawalStatus }) {
   const meta = STATUS_META[status];
   return <Tag color={meta.color}>{meta.label}</Tag>;
@@ -86,7 +80,15 @@ export function DistributionWithdrawalsTab() {
   });
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget>();
 
-  const { items, total, loading, error, pagination, refetch } = usePagedList<
+  const {
+    items,
+    total,
+    loading,
+    error,
+    pagination,
+    refetch,
+    resetPage,
+  } = usePagedList<
     DistributionWithdrawal,
     WithdrawalFilters
   >({
@@ -116,6 +118,7 @@ export function DistributionWithdrawalsTab() {
       );
       setReviewTarget(undefined);
       form.resetFields();
+      resetPage();
       queryClient.invalidateQueries({ queryKey: [LIST_QUERY_KEY] });
       queryClient.invalidateQueries({
         queryKey: ["admin-distribution-accounts"],
@@ -271,25 +274,28 @@ export function DistributionWithdrawalsTab() {
 
       <Card size="small" styles={{ body: { padding: 16 } }}>
         <Space wrap>
-          <Input.Search
-            allowClear
+          <InputNumber
+            min={1}
+            precision={0}
             placeholder="销售用户 ID"
             style={{ width: 160 }}
-            onSearch={(value) =>
+            onChange={(value) =>
               setFilters((current) => ({
                 ...current,
-                user_id: toPositiveInt(value),
+                user_id: typeof value === "number" ? value : undefined,
               }))
             }
           />
-          <Input.Search
-            allowClear
+          <InputNumber
+            min={1}
+            precision={0}
             placeholder="分销账号 ID"
             style={{ width: 160 }}
-            onSearch={(value) =>
+            onChange={(value) =>
               setFilters((current) => ({
                 ...current,
-                distributor_account_id: toPositiveInt(value),
+                distributor_account_id:
+                  typeof value === "number" ? value : undefined,
               }))
             }
           />
@@ -341,7 +347,11 @@ export function DistributionWithdrawalsTab() {
         okButtonProps={{ danger: !isConfirm }}
         confirmLoading={reviewMut.isPending}
         destroyOnHidden
+        closable={!reviewMut.isPending}
+        keyboard={!reviewMut.isPending}
+        maskClosable={!reviewMut.isPending}
         onCancel={() => {
+          if (reviewMut.isPending) return;
           setReviewTarget(undefined);
           form.resetFields();
         }}
@@ -363,6 +373,57 @@ export function DistributionWithdrawalsTab() {
                   <Money cents={reviewTarget.withdrawal.amount_cents} />
                 </span>
               }
+            />
+            <Descriptions
+              size="small"
+              bordered
+              column={1}
+              items={[
+                {
+                  key: "seller",
+                  label: "销售",
+                  children: (
+                    <span>
+                      {reviewTarget.withdrawal.nickname || "未设置昵称"}{" "}
+                      <Mono>#{reviewTarget.withdrawal.user_id}</Mono>{" "}
+                      {reviewTarget.withdrawal.mobile && (
+                        <Mono>{reviewTarget.withdrawal.mobile}</Mono>
+                      )}
+                    </span>
+                  ),
+                },
+                {
+                  key: "method",
+                  label: "收款方式",
+                  children:
+                    METHOD_LABEL[reviewTarget.withdrawal.method_type],
+                },
+                {
+                  key: "account_name",
+                  label: "收款人",
+                  children: reviewTarget.withdrawal.account_name,
+                },
+                {
+                  key: "account_number",
+                  label: "收款账号",
+                  children: (
+                    <Typography.Text
+                      copyable={{ text: reviewTarget.withdrawal.account_number }}
+                    >
+                      <Mono>{reviewTarget.withdrawal.account_number}</Mono>
+                    </Typography.Text>
+                  ),
+                },
+                ...(reviewTarget.withdrawal.bank_name
+                  ? [
+                      {
+                        key: "bank_name",
+                        label: "开户行",
+                        children: reviewTarget.withdrawal.bank_name,
+                      },
+                    ]
+                  : []),
+              ]}
             />
             <Form
               form={form}
