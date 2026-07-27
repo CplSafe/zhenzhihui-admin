@@ -6,7 +6,6 @@ import {
   Descriptions,
   Form,
   Input,
-  InputNumber,
   Modal,
   Select,
   Space,
@@ -51,6 +50,8 @@ interface ReviewTarget {
   action: "confirm" | "reject";
 }
 
+type IDFilterKey = "user_id" | "distributor_account_id";
+
 const STATUS_META: Record<
   DistributionWithdrawalStatus,
   { label: string; color: string }
@@ -78,6 +79,9 @@ export function DistributionWithdrawalsTab() {
   const [filters, setFilters] = useState<WithdrawalFilters>({
     status: "pending",
   });
+  const [userIDInput, setUserIDInput] = useState("");
+  const [accountIDInput, setAccountIDInput] = useState("");
+  const [invalidIDFilter, setInvalidIDFilter] = useState<IDFilterKey>();
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget>();
 
   const {
@@ -135,6 +139,26 @@ export function DistributionWithdrawalsTab() {
   ) => {
     form.resetFields();
     setReviewTarget({ withdrawal, action });
+  };
+
+  const applyIDFilter = (key: IDFilterKey, rawValue: string) => {
+    const value = rawValue.trim();
+    if (value === "") {
+      setInvalidIDFilter((current) => (current === key ? undefined : current));
+      setFilters((current) => ({ ...current, [key]: undefined }));
+      return;
+    }
+    if (!/^[1-9]\d*$/.test(value)) {
+      setInvalidIDFilter(key);
+      return;
+    }
+    const parsed = Number(value);
+    if (!Number.isSafeInteger(parsed)) {
+      setInvalidIDFilter(key);
+      return;
+    }
+    setInvalidIDFilter((current) => (current === key ? undefined : current));
+    setFilters((current) => ({ ...current, [key]: parsed }));
   };
 
   const columns: TableColumnsType<DistributionWithdrawal> = [
@@ -274,31 +298,50 @@ export function DistributionWithdrawalsTab() {
 
       <Card size="small" styles={{ body: { padding: 16 } }}>
         <Space wrap>
-          <InputNumber
-            min={1}
-            precision={0}
-            placeholder="销售用户 ID"
-            style={{ width: 160 }}
-            onChange={(value) =>
-              setFilters((current) => ({
-                ...current,
-                user_id: typeof value === "number" ? value : undefined,
-              }))
-            }
-          />
-          <InputNumber
-            min={1}
-            precision={0}
-            placeholder="分销账号 ID"
-            style={{ width: 160 }}
-            onChange={(value) =>
-              setFilters((current) => ({
-                ...current,
-                distributor_account_id:
-                  typeof value === "number" ? value : undefined,
-              }))
-            }
-          />
+          <Space orientation="vertical" size={2}>
+            <Input.Search
+              allowClear
+              inputMode="numeric"
+              placeholder="销售用户 ID"
+              value={userIDInput}
+              status={invalidIDFilter === "user_id" ? "error" : undefined}
+              style={{ width: 160 }}
+              onChange={(event) => {
+                setUserIDInput(event.target.value);
+                if (event.target.value === "") applyIDFilter("user_id", "");
+              }}
+              onSearch={(value) => applyIDFilter("user_id", value)}
+            />
+            {invalidIDFilter === "user_id" && (
+              <Typography.Text type="danger">请输入正整数</Typography.Text>
+            )}
+          </Space>
+          <Space orientation="vertical" size={2}>
+            <Input.Search
+              allowClear
+              inputMode="numeric"
+              placeholder="分销账号 ID"
+              value={accountIDInput}
+              status={
+                invalidIDFilter === "distributor_account_id"
+                  ? "error"
+                  : undefined
+              }
+              style={{ width: 160 }}
+              onChange={(event) => {
+                setAccountIDInput(event.target.value);
+                if (event.target.value === "") {
+                  applyIDFilter("distributor_account_id", "");
+                }
+              }}
+              onSearch={(value) =>
+                applyIDFilter("distributor_account_id", value)
+              }
+            />
+            {invalidIDFilter === "distributor_account_id" && (
+              <Typography.Text type="danger">请输入正整数</Typography.Text>
+            )}
+          </Space>
           <Select
             allowClear
             placeholder="提现状态"
