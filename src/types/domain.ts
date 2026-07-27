@@ -290,6 +290,11 @@ export interface ProviderConfigView {
   timeout_seconds: number;
   api_key_configured: boolean;
   api_key_masked?: string;
+  access_key_configured: boolean;
+  access_key_masked?: string;
+  secret_key_configured: boolean;
+  project_name?: string;
+  region?: string;
 }
 
 // 后台管理员,对应 domain.AdminUser。

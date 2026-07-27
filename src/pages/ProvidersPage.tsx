@@ -35,6 +35,10 @@ interface FormValues {
   api_key?: string;
   // 勾选「清空 Key」→ 提交 api_key:""(后端据此清空并标记 cleared,不再回退 env)。
   clear_api_key?: boolean;
+  access_key?: string;
+  secret_key?: string;
+  project_name?: string;
+  region?: string;
 }
 
 // 自定义兼容 provider 名规则,与后端 settings.isConfigurableProvider 一致。
@@ -64,6 +68,10 @@ export function ProvidersPage() {
         timeout_seconds: editing.timeout_seconds,
         api_key: "",
         clear_api_key: false,
+        access_key: "",
+        secret_key: "",
+        project_name: editing.project_name,
+        region: editing.region || "cn-beijing",
       });
     } else if (creating) {
       form.resetFields();
@@ -91,6 +99,10 @@ export function ProvidersPage() {
           : v.api_key && v.api_key.trim()
             ? { api_key: v.api_key.trim() }
             : {}),
+        ...(v.access_key?.trim() ? { access_key: v.access_key.trim() } : {}),
+        ...(v.secret_key?.trim() ? { secret_key: v.secret_key.trim() } : {}),
+        ...(v.project_name?.trim() ? { project_name: v.project_name.trim() } : {}),
+        ...(v.region?.trim() ? { region: v.region.trim() } : {}),
       });
     },
     onSuccess: () => {
@@ -130,6 +142,18 @@ export function ProvidersPage() {
   });
 
   const columns: TableColumnsType<ProviderConfigView> = [
+    {
+      title: "真人素材 AK/SK",
+      key: "assetCredentials",
+      width: 230,
+      render: (_, r) => r.provider === "volcengine" ? (
+        <Space size={6}>
+          <Tag color={r.access_key_configured ? "green" : "red"}>AK {r.access_key_configured ? "已配置" : "未配置"}</Tag>
+          <Tag color={r.secret_key_configured ? "green" : "red"}>SK {r.secret_key_configured ? "已配置" : "未配置"}</Tag>
+          {r.access_key_masked && <Mono>{r.access_key_masked}</Mono>}
+        </Space>
+      ) : <span>-</span>,
+    },
     {
       title: "Provider",
       dataIndex: "provider",
@@ -291,6 +315,23 @@ export function ProvidersPage() {
               清空该 Provider 的 Key(下线该 provider,不再回退环境变量)
             </Checkbox>
           </Form.Item>
+          {editing?.provider === "volcengine" && (
+            <>
+              <Alert type="info" showIcon style={{ marginBottom: 16 }} message="真人素材库使用 AK/SK 签名" description="与视频生成使用的 Ark API Key 独立。AK 账号需具备方舟 Assets 权限，ProjectName 必须与推理项目一致。" />
+              <Form.Item name="access_key" label="AccessKey" extra="留空保留已保存值；后台不会回显明文。">
+                <Input.Password autoComplete="new-password" placeholder="留空则保留原 AccessKey" />
+              </Form.Item>
+              <Form.Item name="secret_key" label="SecretKey" extra="留空保留已保存值；后台不会回显明文。">
+                <Input.Password autoComplete="new-password" placeholder="留空则保留原 SecretKey" />
+              </Form.Item>
+              <Form.Item name="project_name" label="ProjectName" rules={[{ required: true, message: "必填" }]}>
+                <Input placeholder="default" />
+              </Form.Item>
+              <Form.Item name="region" label="Region" rules={[{ required: true, message: "必填" }]}>
+                <Input placeholder="cn-beijing" />
+              </Form.Item>
+            </>
+          )}
           <Form.Item
             name="timeout_seconds"
             label="超时(秒)"

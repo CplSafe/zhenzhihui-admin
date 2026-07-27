@@ -9,6 +9,10 @@ export interface ProviderUpdateBody {
   timeout_seconds: number;
   // 不传 = 保留原 key;空串 = 清空;非空 = 覆盖。
   api_key?: string;
+  access_key?: string;
+  secret_key?: string;
+  project_name?: string;
+  region?: string;
 }
 export const updateProviderConfig = (
   provider: string,
