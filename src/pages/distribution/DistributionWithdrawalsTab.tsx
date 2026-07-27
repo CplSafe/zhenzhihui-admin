@@ -81,7 +81,9 @@ export function DistributionWithdrawalsTab() {
   });
   const [userIDInput, setUserIDInput] = useState("");
   const [accountIDInput, setAccountIDInput] = useState("");
-  const [invalidIDFilter, setInvalidIDFilter] = useState<IDFilterKey>();
+  const [invalidIDFilters, setInvalidIDFilters] = useState<
+    Partial<Record<IDFilterKey, boolean>>
+  >({});
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget>();
 
   const {
@@ -144,20 +146,20 @@ export function DistributionWithdrawalsTab() {
   const applyIDFilter = (key: IDFilterKey, rawValue: string) => {
     const value = rawValue.trim();
     if (value === "") {
-      setInvalidIDFilter((current) => (current === key ? undefined : current));
+      setInvalidIDFilters((current) => ({ ...current, [key]: false }));
       setFilters((current) => ({ ...current, [key]: undefined }));
       return;
     }
     if (!/^[1-9]\d*$/.test(value)) {
-      setInvalidIDFilter(key);
+      setInvalidIDFilters((current) => ({ ...current, [key]: true }));
       return;
     }
     const parsed = Number(value);
     if (!Number.isSafeInteger(parsed)) {
-      setInvalidIDFilter(key);
+      setInvalidIDFilters((current) => ({ ...current, [key]: true }));
       return;
     }
-    setInvalidIDFilter((current) => (current === key ? undefined : current));
+    setInvalidIDFilters((current) => ({ ...current, [key]: false }));
     setFilters((current) => ({ ...current, [key]: parsed }));
   };
 
@@ -304,7 +306,7 @@ export function DistributionWithdrawalsTab() {
               inputMode="numeric"
               placeholder="销售用户 ID"
               value={userIDInput}
-              status={invalidIDFilter === "user_id" ? "error" : undefined}
+              status={invalidIDFilters.user_id ? "error" : undefined}
               style={{ width: 160 }}
               onChange={(event) => {
                 setUserIDInput(event.target.value);
@@ -312,7 +314,7 @@ export function DistributionWithdrawalsTab() {
               }}
               onSearch={(value) => applyIDFilter("user_id", value)}
             />
-            {invalidIDFilter === "user_id" && (
+            {invalidIDFilters.user_id && (
               <Typography.Text type="danger">请输入正整数</Typography.Text>
             )}
           </Space>
@@ -323,7 +325,7 @@ export function DistributionWithdrawalsTab() {
               placeholder="分销账号 ID"
               value={accountIDInput}
               status={
-                invalidIDFilter === "distributor_account_id"
+                invalidIDFilters.distributor_account_id
                   ? "error"
                   : undefined
               }
@@ -338,7 +340,7 @@ export function DistributionWithdrawalsTab() {
                 applyIDFilter("distributor_account_id", value)
               }
             />
-            {invalidIDFilter === "distributor_account_id" && (
+            {invalidIDFilters.distributor_account_id && (
               <Typography.Text type="danger">请输入正整数</Typography.Text>
             )}
           </Space>
