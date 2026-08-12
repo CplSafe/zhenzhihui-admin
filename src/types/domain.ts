@@ -337,12 +337,35 @@ export interface Pricing {
   provider_cost_currency?: string;
   provider_cost_to_cny_ppm?: number;
   provider_cost_cents_per_million_tokens_with_video?: number;
-  provider_cost_cents_per_million_tokens_by_tier?: Record<string, TierTokenRate>;
+  provider_cost_cents_per_million_tokens_by_tier?: Record<
+    string,
+    TierTokenRate
+  >;
   provider_cost_cents_per_million_tokens_by_usage?: Record<string, number>;
   provider_cost_cents_per_successful_output?: number;
   provider_cost_cents_per_successful_output_by_variant?: Record<string, number>;
-  provider_cost_cents_per_billable_second_by_resolution?: Record<string, number>;
+  provider_cost_cents_per_billable_second_by_resolution?: Record<
+    string,
+    number
+  >;
   revenue_cents_per_thousand_credits?: number;
+  // 超出免费额度后每张输入图的积分单价(MiniMax H3:前 5 张免费)。
+  credits_per_extra_input_image?: number;
+  // 限时优惠。窗口内按 promo 的单价计费,到期自动回落上面的刊例价。
+  promo?: PromoPricing;
+}
+
+// 限时优惠,对应 catalog.PromoPricing。
+// 窗口内覆盖 credits_per_billable_second_by_resolution;到期自动失效,
+// 不需要人工改回(这正是它存在的意义——避免活动结束后继续按折扣价亏本卖)。
+export interface PromoPricing {
+  // 活动文案,前端直接展示(如「限时 4 折」)。
+  label?: string;
+  // 活动起止时间(RFC3339,带时区)。留空表示该侧不限。
+  starts_at?: string;
+  ends_at?: string;
+  // 折后的每秒单价表,结构同刊例价。
+  credits_per_billable_second_by_resolution?: Record<string, number>;
 }
 
 // 单个分辨率档的 token 单价(积分/千 token),按输入是否含视频区分。

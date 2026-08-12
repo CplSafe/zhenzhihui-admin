@@ -1,7 +1,17 @@
 import { useState } from "react";
-import { Collapse, InputNumber, Select, Space, Table, Typography } from "antd";
+import {
+  Collapse,
+  DatePicker,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Table,
+  Typography,
+} from "antd";
+import dayjs from "dayjs";
 import { JsonField } from "@/components/JsonField";
-import type { Pricing, TierTokenRate } from "@/types/domain";
+import type { Pricing, PromoPricing, TierTokenRate } from "@/types/domain";
 
 interface PricingFieldProps {
   value?: Pricing;
@@ -31,6 +41,8 @@ const COMMON_KEYS = [
   "provider_cost_cents_per_successful_output",
   "provider_cost_cents_per_billable_second_by_resolution",
   "revenue_cents_per_thousand_credits",
+  "credits_per_extra_input_image",
+  "promo",
 ] as const;
 
 // 计费单位(描述性,后端 validatePricing 要求非空)。按能力给合理默认。
@@ -49,7 +61,9 @@ type Tier = (typeof TIERS)[number];
 // 视频统一计费:积分 = 单价[清晰度] × 时长(秒),预冻=结算(后端 ai.videoCredits)。
 // 所有视频(Seedance / 爆款做同款 / HappyHorse)都用本表。key 用大写(库内统一约定,
 // 后端查表大小写双查;HappyHorse 上游 SR 拼出的 "<SR>P" 也是大写)。
-const SECOND_TIERS = ["480P", "720P", "1080P"] as const;
+// 含 4K:Seedance 2.0 支持到 4K,少这一档会导致 4K 价在表单里既看不到也改不了。
+// MiniMax H3 用 768P / 2K,不在这几档里 —— 那两档走下方「其他清晰度」自由行。
+const SECOND_TIERS = ["480P", "720P", "1080P", "4K"] as const;
 type SecondTier = (typeof SECOND_TIERS)[number];
 
 function FieldLabel({ text }: { text: string }) {
@@ -93,7 +107,8 @@ export function PricingField({
       | "provider_cost_cents_per_million_tokens_with_video"
       | "provider_cost_cents_per_successful_output"
       | "provider_cost_to_cny_ppm"
-      | "revenue_cents_per_thousand_credits",
+      | "revenue_cents_per_thousand_credits"
+      | "credits_per_extra_input_image",
     v: number | null,
   ) => {
     const next: Pricing = { ...pricing };
@@ -118,8 +133,14 @@ export function PricingField({
     emit(next);
   };
 
+  // 库里已有但不在 SECOND_TIERS 固定档里的清晰度(如 MiniMax H3 的 768P / 2K)。
+  // 一并渲染成可编辑行,否则这些档只能去高级 JSON 改。
+  const extraSecondTiers = Object.keys(secondTable).filter(
+    (tier) => !SECOND_TIERS.includes(tier as SecondTier),
+  );
+
   // 设某分辨率档的每秒积分;清空则删该档,空表自动收缩(从 pricing 移除整个字段)。
-  const setSecondRate = (tier: SecondTier, v: number | null) => {
+  const setSecondRate = (tier: string, v: number | null) => {
     const nextTable: Record<string, number> = { ...secondTable };
     if (v === null) delete nextTable[tier];
     else nextTable[tier] = v;
@@ -129,6 +150,121 @@ export function PricingField({
     else next.credits_per_billable_second_by_resolution = nextTable;
     emit(next);
   };
+
+  // ---- 限时优惠 ----
+  // 窗口内后端按 promo 的单价计费,到期自动回落刊例价(catalog.PromoPricing)。
+  const promo = pricing.promo;
+  const promoTable = promo?.credits_per_billable_second_by_resolution ?? {};
+  const promoActive = (() => {
+    if (!promo || Object.keys(promoTable).length === 0) return false;
+    const now = dayjs();
+    if (promo.starts_at && now.isBefore(dayjs(promo.starts_at))) return false;
+    if (promo.ends_at && !now.isBefore(dayjs(promo.ends_at))) return false;
+    return true;
+  })();
+
+  // 整体改写 promo;传 undefined 表示清除活动(恢复刊例价)。
+  const emitPromo = (next: PromoPricing | undefined) => {
+    const nextPricing: Pricing = { ...pricing };
+    if (
+      !next ||
+      Object.keys(next.credits_per_billable_second_by_resolution ?? {})
+        .length === 0
+    ) {
+      delete nextPricing.promo;
+    } else {
+      nextPricing.promo = next;
+    }
+    emit(nextPricing);
+  };
+
+  const setPromoRate = (tier: string, v: number | null) => {
+    const nextTable: Record<string, number> = { ...promoTable };
+    if (v === null) delete nextTable[tier];
+    else nextTable[tier] = v;
+    emitPromo({
+      ...promo,
+      credits_per_billable_second_by_resolution: nextTable,
+    });
+  };
+
+  const renderPromo = () => (
+    <div>
+      <Typography.Paragraph
+        type="secondary"
+        style={{ fontSize: 12, marginBottom: 8 }}
+      >
+        活动期间按下表单价计费(用户实扣折后价),
+        <strong>到期自动恢复上面的刊例价,不需要人工改回</strong>。
+        清空折后单价即取消活动。前端会展示「划线价 + 现价 + 倒计时」。
+      </Typography.Paragraph>
+      <Space size="large" wrap style={{ marginBottom: 8 }}>
+        <label>
+          <FieldLabel text="活动文案(前端展示)" />
+          <Input
+            style={{ width: 200 }}
+            placeholder="如 限时 4 折"
+            value={promo?.label}
+            onChange={(e) =>
+              emitPromo({ ...promo, label: e.target.value || undefined })
+            }
+          />
+        </label>
+        <label>
+          <FieldLabel text="活动起止时间(留空表示该侧不限)" />
+          <DatePicker.RangePicker
+            showTime
+            style={{ width: 380 }}
+            value={[
+              promo?.starts_at ? dayjs(promo.starts_at) : null,
+              promo?.ends_at ? dayjs(promo.ends_at) : null,
+            ]}
+            onChange={(range) =>
+              emitPromo({
+                ...promo,
+                starts_at: range?.[0]?.format() || undefined,
+                ends_at: range?.[1]?.format() || undefined,
+              })
+            }
+          />
+        </label>
+      </Space>
+      <Table<{ tier: string }>
+        size="small"
+        pagination={false}
+        rowKey="tier"
+        dataSource={[...SECOND_TIERS, ...extraSecondTiers].map((tier) => ({
+          tier,
+        }))}
+        columns={[
+          { title: "清晰度", dataIndex: "tier", width: 90 },
+          {
+            title: "刊例价(每秒积分)",
+            width: 140,
+            render: (_, r) => (
+              <Typography.Text type="secondary">
+                {secondTable[r.tier] ?? "—"}
+              </Typography.Text>
+            ),
+          },
+          {
+            title: "折后价(每秒积分)",
+            width: 180,
+            render: (_, r) => (
+              <InputNumber
+                min={0}
+                precision={0}
+                style={{ width: "100%" }}
+                value={promoTable[r.tier]}
+                onChange={(v) => setPromoRate(r.tier, v)}
+                placeholder="留空=该档不打折"
+              />
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
 
   const setAdvanced = (parsed: unknown) => {
     const adv = (parsed as Record<string, unknown>) ?? {};
@@ -149,11 +285,13 @@ export function PricingField({
       <div>
         {renderUnit()}
         <FieldLabel text="视频计费(每秒积分,按清晰度档):积分 = 每秒积分 × 时长(秒)" />
-        <Table<{ tier: SecondTier }>
+        <Table<{ tier: string }>
           size="small"
           pagination={false}
           rowKey="tier"
-          dataSource={SECOND_TIERS.map((tier) => ({ tier }))}
+          dataSource={[...SECOND_TIERS, ...extraSecondTiers].map((tier) => ({
+            tier,
+          }))}
           columns={[
             { title: "清晰度", dataIndex: "tier", width: 90 },
             {
@@ -186,6 +324,13 @@ export function PricingField({
           size="small"
           items={[
             {
+              key: "promo",
+              label: promoActive
+                ? `限时优惠(生效中${pricing.promo?.label ? `:${pricing.promo.label}` : ""})`
+                : "限时优惠(上游搞活动时跟着降价,到期自动回落刊例价)",
+              children: renderPromo(),
+            },
+            {
               key: "legacy-token-tier",
               label: "旧版:按 token 单价表(已停用,仅兼容历史配置)",
               children: renderLegacyTierTable(),
@@ -214,6 +359,18 @@ export function PricingField({
               value={pricing.hold_credits_per_second}
               onChange={(v) => setRate("hold_credits_per_second", v)}
               placeholder="如 200"
+            />
+          </label>
+          <label>
+            {/* MiniMax H3:前 5 张输入图免费,超出按张加价。0 / 留空=输入图不额外计费。 */}
+            <FieldLabel text="超额输入图单价(每张积分,仅 MiniMax H3 用)" />
+            <InputNumber
+              min={0}
+              precision={0}
+              style={{ width: 240 }}
+              value={pricing.credits_per_extra_input_image}
+              onChange={(v) => setRate("credits_per_extra_input_image", v)}
+              placeholder="如 15"
             />
           </label>
         </Space>
