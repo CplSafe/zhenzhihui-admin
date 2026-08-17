@@ -147,10 +147,25 @@ export const menuConfig: MenuItemConfig[] = [
     permission: Permission.REFERRAL_READ,
   },
   {
+    key: "agent-sessions",
+    path: "/agent-sessions",
+    label: "智能体会话",
+    icon: <RobotOutlined />,
+    // 会话即 AI 任务活动,复用任务读权限,不新增权限位。
+    permission: Permission.TASKS_READ,
+  },
+  {
     key: "providers",
     path: "/providers",
     label: "Provider 配置",
     icon: <KeyOutlined />,
+    permission: Permission.SETTINGS_READ,
+  },
+  {
+    key: "agent-settings",
+    path: "/agent-settings",
+    label: "智能体配置",
+    icon: <RobotOutlined />,
     permission: Permission.SETTINGS_READ,
   },
   {

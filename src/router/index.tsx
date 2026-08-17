@@ -23,6 +23,8 @@ import { AdminUsersPage } from "@/pages/AdminUsersPage";
 import { PlansPage } from "@/pages/PlansPage";
 import { CreditPackagesPage } from "@/pages/CreditPackagesPage";
 import { ProvidersPage } from "@/pages/ProvidersPage";
+import { AgentSessionsPage } from "@/pages/AgentSessionsPage";
+import { AgentSettingsPage } from "@/pages/AgentSettingsPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { menuConfig } from "@/router/menuConfig";
@@ -47,6 +49,8 @@ const pageByKey: Record<string, ReactNode> = {
   feedbacks: <FeedbacksPage />,
   referral: <ReferralPage />,
   providers: <ProvidersPage />,
+  "agent-sessions": <AgentSessionsPage />,
+  "agent-settings": <AgentSettingsPage />,
   "admin-users": <AdminUsersPage />,
   "audit-logs": <AuditLogsPage />,
 };

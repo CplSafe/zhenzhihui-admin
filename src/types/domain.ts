@@ -415,3 +415,90 @@ export interface Overview {
   assets_total: number;
   assets_size_bytes: number;
 }
+
+// ---------------------------------------------------------------- 智能体
+
+// 智能体配置脱敏视图,对应 settings.AgentConfigView。
+// 与 provider 凭证同一原则:永不回明文 key,只有掩码 + 是否已配置。
+export interface AgentConfigView {
+  search_api_key_set: boolean;
+  search_api_key_masked?: string;
+  chat_operation_code: string;
+  video_operation_code: string;
+}
+
+// 会话类型。
+export const AGENT_KINDS = {
+  product_analysis: "产品分析",
+  trend_tracking: "热点追踪",
+  script_writing: "脚本策划",
+} as const;
+
+// 会话状态。awaiting_confirm 表示正等用户确认生成或回答提问。
+export const AGENT_STATUSES = {
+  idle: "待开始",
+  running: "运行中",
+  awaiting_confirm: "等待用户",
+  completed: "已完成",
+  failed: "失败",
+} as const;
+
+// 执行模式:manual 每次生成前确认,auto 由 Agent 自主执行。
+export const AGENT_EXEC_MODES = {
+  manual: "手动确认",
+  auto: "自动生成",
+} as const;
+
+// 智能体会话,对应 domain.AgentSession。
+export interface AgentSession extends MutableEntity {
+  workspace_id: number;
+  user_id: number;
+  kind: string;
+  title: string;
+  status: string;
+  model_version_id: number;
+  exec_mode: string;
+  credit_cap: number;
+  spent_credits: number;
+  last_error?: string;
+  last_run_at?: string;
+  total_tokens: number;
+}
+
+// 会话消息,对应 domain.AgentMessage。
+// tool_calls / tool_call_id 完整保留,便于排查"模型为什么这么做"。
+export interface AgentMessage extends MutableEntity {
+  session_id: number;
+  seq: number;
+  role: string;
+  content: string;
+  tool_calls?: unknown;
+  tool_call_id?: string;
+  tool_name?: string;
+  assets?: string[];
+  tokens_used: number;
+}
+
+// 会话产出物,对应 domain.AgentArtifact。
+export interface AgentArtifact extends MutableEntity {
+  session_id: number;
+  kind: string;
+  title: string;
+  data?: unknown;
+  ai_task_id?: number;
+}
+
+export interface AgentSessionDetail {
+  session: AgentSession;
+  messages: AgentMessage[];
+  artifacts: AgentArtifact[];
+}
+
+// 用量概览,对应 agent.AdminStats。
+export interface AgentStats {
+  total_sessions: number;
+  active_sessions: number;
+  total_tokens: number;
+  total_credits: number;
+  total_artifacts: number;
+}
