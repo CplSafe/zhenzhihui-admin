@@ -337,7 +337,10 @@ export function ProvidersPage() {
             label="超时(秒)"
             rules={[{ required: true }]}
           >
-            <InputNumber min={1} max={600} style={{ width: "100%" }} />
+            {/* 上限 3600s:agent 单轮要塞进多轮搜索结果与子任务汇总,
+                输入常达几万 token,600s 对这类长请求不够。
+                保留上限是防误填——手滑多打个零会让连接挂几小时。 */}
+            <InputNumber min={1} max={3600} style={{ width: "100%" }} />
           </Form.Item>
         </Form>
       </Modal>
