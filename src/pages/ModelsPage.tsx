@@ -10,8 +10,10 @@ import {
   Select,
   Space,
   Switch,
+  Upload,
 } from "antd";
-import type { TableColumnsType } from "antd";
+import type { TableColumnsType, UploadProps } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
@@ -28,6 +30,7 @@ import {
   listModels,
   testModelConnection,
   updateModel,
+  uploadModelLogo,
   type ModelWriteBody,
   type TestConnectionResult,
 } from "@/api/models";
@@ -47,6 +50,10 @@ const TASK_MODE_OPTIONS = [
   { value: "both", label: "both 两者" },
 ];
 
+// logo 用 contain 而不是 cover:厂商 logo 常带留白且比例不一,裁切会切掉字。
+const LOGO_THUMB = { width: 32, height: 32, objectFit: "contain" as const };
+const LOGO_PREVIEW = { width: 40, height: 40, objectFit: "contain" as const };
+
 const CAPABILITY_OPTIONS = [
   { value: "responses", label: "responses 对话" },
   { value: "image", label: "image 图像" },
@@ -65,6 +72,7 @@ export function ModelsPage() {
   // system_prompts 的 opcode 下拉来源:跟随表单里已填的 operation_codes。
   const watchedOps = Form.useWatch("operation_codes", form);
   const watchedCapability = Form.useWatch("capability", form);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   // 各 JSON 字段合法性;任一非法则禁用保存,避免非法 JSON 静默存旧值(见 JsonField)。
   const [jsonValid, setJsonValid] = useState<Record<string, boolean>>({});
   const allJsonValid = Object.values(jsonValid).every(Boolean);
@@ -111,6 +119,7 @@ export function ModelsPage() {
         model: d.model,
         version: d.version,
         display_name: d.display_name,
+        logo_url: d.logo_url,
         capability: d.capability,
         enabled: d.enabled,
         task_mode: d.task_mode,
@@ -175,12 +184,48 @@ export function ModelsPage() {
     },
   });
 
+  // 上传 logo:成功后把返回的公开 URL 写回表单(运营也可以完全不上传、直接粘外部 URL)。
+  const beforeUploadLogo: UploadProps["beforeUpload"] = async (file) => {
+    // 客户端预校验(服务端才是权威闸门,这里给运营即时反馈,挡明显错误)。
+    const f = file as File;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (f.type && !allowed.includes(f.type)) {
+      message.error("logo 仅支持 JPEG/PNG/WebP/GIF 图片");
+      return Upload.LIST_IGNORE;
+    }
+    const maxBytes = 10 * 1024 * 1024; // 10MB,与后端一致
+    if (f.size > maxBytes) {
+      message.error("文件超过 10MB,请压缩后再上传");
+      return Upload.LIST_IGNORE;
+    }
+    setUploadingLogo(true);
+    try {
+      const res = await uploadModelLogo(f);
+      form.setFieldsValue({ logo_url: res.logo_url });
+      message.success("logo 已上传");
+    } catch (e) {
+      message.error(
+        e instanceof ApiError ? e.message : "上传失败,可改为直接填写 URL",
+      );
+    } finally {
+      setUploadingLogo(false);
+    }
+    return false; // 阻止 antd 默认上传行为,完全自管。
+  };
+
   const columns: TableColumnsType<ModelVersion> = [
     {
       title: "ID",
       dataIndex: "id",
       width: 70,
       render: (v) => <Mono>{v}</Mono>,
+    },
+    {
+      title: "Logo",
+      dataIndex: "logo_url",
+      width: 80,
+      render: (v: string | undefined) =>
+        v ? <img src={v} alt="logo" style={LOGO_THUMB} /> : <span>-</span>,
     },
     { title: "展示名", dataIndex: "display_name" },
     { title: "provider", dataIndex: "provider", width: 110 },
@@ -359,6 +404,38 @@ export function ModelsPage() {
           </Form.Item>
           <Form.Item name="display_name" label="展示名">
             <Input placeholder="Seedance 2.0" />
+          </Form.Item>
+          <Form.Item
+            name="logo_url"
+            label="厂商 Logo(选填)"
+            extra="点上传到对象存储自动回填,或直接粘贴模型官方 logo 的图片 URL。"
+          >
+            <Input placeholder="https://cdn.example.com/logos/volcengine.png" />
+          </Form.Item>
+          <Form.Item label=" " colon={false}>
+            <Space align="center">
+              <Upload
+                accept="image/*"
+                showUploadList={false}
+                beforeUpload={beforeUploadLogo}
+              >
+                <Button icon={<UploadOutlined />} loading={uploadingLogo}>
+                  上传 Logo
+                </Button>
+              </Upload>
+              {/* 预览只订阅 logo_url:用 useWatch 会让整个抽屉(含多个 JSON 编辑器)逐键重渲染。 */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prev, cur) => prev.logo_url !== cur.logo_url}
+              >
+                {({ getFieldValue }) => {
+                  const url = getFieldValue("logo_url");
+                  return url ? (
+                    <img src={url} alt="logo 预览" style={LOGO_PREVIEW} />
+                  ) : null;
+                }}
+              </Form.Item>
+            </Space>
           </Form.Item>
           <Form.Item name="capability" label="能力">
             <Select options={CAPABILITY_OPTIONS} placeholder="选择能力" />

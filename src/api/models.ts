@@ -14,6 +14,7 @@ export interface ModelWriteBody {
   model?: string;
   version?: string;
   display_name?: string;
+  logo_url?: string;
   capability?: string;
   enabled?: boolean;
   task_mode?: string;
@@ -43,6 +44,17 @@ export const enableModel = (id: number) =>
 
 export const disableModel = (id: number) =>
   http.post<ModelVersion>(`/admin/models/${id}/disable`);
+
+export interface ModelLogoUploadResult {
+  logo_url: string;
+}
+
+// 上传模型 logo 到公开桶,返回长期 URL(也可不上传、手填外部 URL)。仅支持图片。
+export const uploadModelLogo = (file: File) => {
+  const form = new FormData();
+  form.append("file", file);
+  return http.post<ModelLogoUploadResult>("/admin/models/logo", form);
+};
 
 export interface TestConnectionBody {
   operation_code?: string;

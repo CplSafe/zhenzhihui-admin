@@ -382,6 +382,8 @@ export interface ModelVersion extends MutableEntity {
   model: string;
   version: string;
   display_name: string;
+  // 模型厂商官方 logo 的图片地址,空表示未配置(前端自行降级)。
+  logo_url?: string;
   capability: string;
   enabled: boolean;
   task_mode: string;
