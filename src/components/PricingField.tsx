@@ -11,6 +11,8 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { JsonField } from "@/components/JsonField";
+import { GoogleImagePricingField } from "@/components/GoogleImagePricingField";
+import { googleImageSpec } from "@/utils/googleImagePricing";
 import type { Pricing, PromoPricing, TierTokenRate } from "@/types/domain";
 
 interface PricingFieldProps {
@@ -18,9 +20,9 @@ interface PricingFieldProps {
   onChange?: (value: Pricing) => void;
   // 高级 JSON 解析失败时上报,沿用 ModelsPage 的保存禁用逻辑。
   onValidityChange?: (valid: boolean) => void;
-  // 模型能力(responses / image / video):仅影响预览文案与是否显示视频专属字段,
-  // 不改变底层字段——三类模型都按 xxx_credit_rate × token 结算。
   capability?: string;
+  provider?: string;
+  version?: string;
 }
 
 // 结构化承载的常用字段;其余(并发限制等)留高级 JSON。
@@ -77,9 +79,13 @@ export function PricingField({
   onChange,
   onValidityChange,
   capability,
+  provider,
+  version,
 }: PricingFieldProps) {
   const pricing: Pricing = value ?? {};
   const isVideo = capability === "video";
+  const googleSpec = googleImageSpec(provider, version, capability);
+  const isLegacyGoogle = provider === "google" && capability === "image" && version === "gemini-2.5-flash-image";
   const tierTable = pricing.credits_per_thousand_tokens_by_tier ?? {};
   const secondTable = pricing.credits_per_billable_second_by_resolution ?? {};
 
@@ -280,6 +286,15 @@ export function PricingField({
   const inRate = pricing.input_credit_rate ?? 0;
   const outRate = pricing.output_credit_rate ?? 0;
 
+  if (googleSpec) {
+    return (
+      <div>
+        <GoogleImagePricingField spec={googleSpec} value={pricing} onChange={emit} />
+        {renderAdvanced()}
+      </div>
+    );
+  }
+
   if (isVideo) {
     return (
       <div>
@@ -440,7 +455,7 @@ export function PricingField({
       {renderUnit()}
       <Space size="large" wrap>
         <label>
-          <FieldLabel text="输入单价(积分 / 千 token)" />
+          <FieldLabel text={isLegacyGoogle ? "输入单价（此模型须为 0）" : "输入单价(积分 / 千 token)"} />
           <InputNumber
             min={0}
             precision={0}
@@ -451,7 +466,7 @@ export function PricingField({
           />
         </label>
         <label>
-          <FieldLabel text="输出单价(积分 / 千 token)" />
+          <FieldLabel text={isLegacyGoogle ? "固定售价（积分 / 张）" : "输出单价(积分 / 千 token)"} />
           <InputNumber
             min={0}
             precision={0}
@@ -467,9 +482,11 @@ export function PricingField({
         type="secondary"
         style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
       >
-        预览:一次约 1000 输入 + 1000 输出 token ≈{" "}
-        <Typography.Text strong>{inRate + outRate}</Typography.Text> 积分 (输入{" "}
-        {inRate} + 输出 {outRate})。实际按上游返回的真实 token 结算。
+        {isLegacyGoogle ? (
+          <>固定售价：<Typography.Text strong>{outRate} 积分 / 张 = ¥{(outRate * 0.02).toFixed(2)} / 张</Typography.Text>。这是自定义售价，不是官方成本计费。</>
+        ) : (
+          <>单价示例：1000 输入 + 1000 输出 token = {inRate + outRate} 积分（输入 {inRate} + 输出 {outRate}）。{capability === "image" ? "图片模型的预扣与结算取决于供应商返回的用量，按次单位不代表固定每张价格。" : "实际按上游返回的真实 token 结算。"}</>
+        )}
       </Typography.Paragraph>
 
       {renderFinanceRates()}
@@ -480,7 +497,7 @@ export function PricingField({
   function renderUnit() {
     return (
       <label style={{ display: "block", marginBottom: 12 }}>
-        <FieldLabel text="计费单位(必填,描述性,不参与计算)" />
+        <FieldLabel text="计费单位" />
         <Select
           style={{ width: 240 }}
           value={pricing.unit ?? defaultUnit}

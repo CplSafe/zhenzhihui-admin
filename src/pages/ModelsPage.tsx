@@ -19,6 +19,7 @@ import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
 import { JsonField } from "@/components/JsonField";
 import { PricingField } from "@/components/PricingField";
+import { googleImageSpec, validGoogleImagePricing } from "@/utils/googleImagePricing";
 import { SystemPromptsField } from "@/components/SystemPromptsField";
 import { Mono, StatusTag } from "@/components/cells";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -72,6 +73,8 @@ export function ModelsPage() {
   // system_prompts 的 opcode 下拉来源:跟随表单里已填的 operation_codes。
   const watchedOps = Form.useWatch("operation_codes", form);
   const watchedCapability = Form.useWatch("capability", form);
+  const watchedProvider = Form.useWatch("provider", form);
+  const watchedVersion = Form.useWatch("version", form);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   // 各 JSON 字段合法性;任一非法则禁用保存,避免非法 JSON 静默存旧值(见 JsonField)。
   const [jsonValid, setJsonValid] = useState<Record<string, boolean>>({});
@@ -457,10 +460,21 @@ export function ModelsPage() {
           </Form.Item>
           <Form.Item
             name="pricing"
-            label="计价(按千 token 积分单价;视频也按 token,只填一个单价)"
+            label="计价"
+            dependencies={["provider", "version", "capability"]}
+            rules={[{
+              validator: (_, pricing) => {
+                const spec = googleImageSpec(watchedProvider, watchedVersion, watchedCapability);
+                return spec && !validGoogleImagePricing(spec, pricing)
+                  ? Promise.reject(new Error("此模型需要官方成本配置、有效汇率及 1 积分 = ¥0.02 的折算比例"))
+                  : Promise.resolve();
+              },
+            }]}
           >
             <PricingField
               capability={watchedCapability}
+              provider={watchedProvider}
+              version={watchedVersion}
               onValidityChange={setFieldValid("pricing")}
             />
           </Form.Item>
