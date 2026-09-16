@@ -4,12 +4,13 @@ import { applyGoogleImagePricing, googleImageOutputCosts, googleImageSpec, valid
 
 const nano = googleImageSpec("google", "gemini-3.1-flash-image", "image")!;
 const pro = googleImageSpec("google", "gemini-3-pro-image", "image")!;
+const basic = googleImageSpec("google", "gemini-2.5-flash-image", "image")!;
 
 test("only exact official image versions select cost billing", () => {
   assert.ok(nano);
   assert.ok(pro);
+  assert.ok(basic);
   for (const [provider, version, capability] of [
-    ["google", "gemini-2.5-flash-image", "image"],
     ["openai", "gemini-3-pro-image", "image"],
     ["google", "gemini-3-pro-image", "responses"],
     ["google", "gemini-3-pro-image-preview", "image"],
@@ -41,6 +42,7 @@ test("model changes require updated official rates, preserving configured FX", (
 });
 
 test("cost preview shows image-output-only floors, not the old 200 credits", () => {
+  assert.deepEqual(googleImageOutputCosts(basic, applyGoogleImagePricing(basic)).map(r => r.credits), [15]);
   assert.deepEqual(googleImageOutputCosts(nano, applyGoogleImagePricing(nano)).map(r => r.credits), [17, 25, 37, 56]);
   assert.deepEqual(googleImageOutputCosts(pro, applyGoogleImagePricing(pro)).map(r => r.credits), [50, 50, 88]);
   assert.equal(googleImageOutputCosts(nano, applyGoogleImagePricing(nano))[1].cny, 0.49056);

@@ -2,6 +2,10 @@ import type { Pricing } from "@/types/domain";
 
 // Keep in sync with backend internal/catalog/google_images.go (Standard rates).
 const SPECS = {
+  "gemini-2.5-flash-image": {
+    rates: { input: 30, text_output: 250, image_output: 3000 },
+    imageTokens: { "1K": 1290 },
+  },
   "gemini-3.1-flash-image": {
     rates: { input: 50, text_output: 300, image_output: 6000 },
     imageTokens: { "512": 747, "1K": 1120, "2K": 1680, "4K": 2520 },
@@ -14,7 +18,7 @@ const SPECS = {
 
 export function googleImageSpec(provider?: string, version?: string, capability?: string) {
   if (provider !== "google" || capability !== "image") return undefined;
-  if (version === "gemini-3.1-flash-image" || version === "gemini-3-pro-image") {
+  if (version === "gemini-2.5-flash-image" || version === "gemini-3.1-flash-image" || version === "gemini-3-pro-image") {
     return SPECS[version];
   }
   return undefined;
