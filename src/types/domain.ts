@@ -330,6 +330,9 @@ export interface Pricing {
   unit?: string;
   hold_credits_per_second?: number;
   credits_per_billable_second_by_resolution?: Record<string, number>;
+  // 含输入视频(编辑 / 延长 / 视频参考)时的每秒单价,按 (输入视频秒 + 出片秒) 计费。
+  // 目前仅火山 Seedance 使用;空表时后端回退刊例价表。
+  credits_per_billable_second_with_video_by_resolution?: Record<string, number>;
   // Seedance 这类按 token 后置计费、单价随分辨率×含视频跳变的视频模型查表单价(积分/千 token)。
   credits_per_thousand_tokens_by_tier?: Record<string, TierTokenRate>;
   // 后台经营分析：供应商成本（分/百万总 token）与积分收入折算（分/千积分）。

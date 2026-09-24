@@ -34,6 +34,7 @@ const COMMON_KEYS = [
   "hold_credits_per_second",
   "credits_per_thousand_tokens_by_tier",
   "credits_per_billable_second_by_resolution",
+  "credits_per_billable_second_with_video_by_resolution",
   "provider_cost_cents_per_million_tokens",
   "provider_cost_currency",
   "provider_cost_to_cny_ppm",
@@ -88,6 +89,10 @@ export function PricingField({
   const isLegacyGoogle = provider === "google" && capability === "image" && version === "gemini-2.5-flash-image";
   const tierTable = pricing.credits_per_thousand_tokens_by_tier ?? {};
   const secondTable = pricing.credits_per_billable_second_by_resolution ?? {};
+  const withVideoTable =
+    pricing.credits_per_billable_second_with_video_by_resolution ?? {};
+  // 含输入视频单价目前只有火山 Seedance 消费,别的模型不展示这列,免得运营白配。
+  const showWithVideo = provider === "volcengine";
 
   // 高级 JSON 只承载"非常用"字段,避免与上面结构化框双向打架。
   const advanced: Record<string, unknown> = {};
@@ -154,6 +159,18 @@ export function PricingField({
     if (Object.keys(nextTable).length === 0)
       delete next.credits_per_billable_second_by_resolution;
     else next.credits_per_billable_second_by_resolution = nextTable;
+    emit(next);
+  };
+
+  // 设含输入视频的每秒积分;规则同刊例价表(清空删档,空表移除整个字段 → 后端回退刊例价)。
+  const setWithVideoRate = (tier: string, v: number | null) => {
+    const nextTable: Record<string, number> = { ...withVideoTable };
+    if (v === null) delete nextTable[tier];
+    else nextTable[tier] = v;
+    const next: Pricing = { ...pricing };
+    if (Object.keys(nextTable).length === 0)
+      delete next.credits_per_billable_second_with_video_by_resolution;
+    else next.credits_per_billable_second_with_video_by_resolution = nextTable;
     emit(next);
   };
 
@@ -323,6 +340,24 @@ export function PricingField({
                 />
               ),
             },
+            ...(showWithVideo
+              ? [
+                  {
+                    title: "含输入视频(每秒积分)",
+                    width: 180,
+                    render: (_: unknown, r: { tier: string }) => (
+                      <InputNumber
+                        min={0}
+                        precision={0}
+                        style={{ width: "100%" }}
+                        value={withVideoTable[r.tier]}
+                        onChange={(v) => setWithVideoRate(r.tier, v)}
+                        placeholder="如 31"
+                      />
+                    ),
+                  },
+                ]
+              : []),
           ]}
         />
         <Typography.Paragraph
@@ -332,6 +367,8 @@ export function PricingField({
           这是所有视频模型的权威计费表:预冻与实扣都按「每秒积分 × 时长」,
           两头一致、与上游 token / 实际出片秒数无关。比例(16:9 / 9:16
           等)不影响价。清晰度档没配则回退到下方「兜底单价」。
+          {showWithVideo &&
+            " 带参考视频的任务(编辑 / 延长 / 视频参考)改按「含输入视频」列计费:积分 = 该列单价 × (原视频秒数 + 出片秒数);该列留空则回退刊例价。"}
         </Typography.Paragraph>
 
         <Collapse
