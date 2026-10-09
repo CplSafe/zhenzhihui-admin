@@ -53,7 +53,8 @@ export function applyGoogleImagePricing(spec: GoogleImageSpec, pricing: Pricing 
   };
 }
 
-// Image output only, not a task quote. Match backend integer rounding.
+// Image output only, not a task quote. Match backend rounding: CNY nano rounded up,
+// then credits rounded UP to 0.001 (1 credit = ¥0.02 = 20,000,000 nano → 1 milli = 20,000 nano).
 export function googleImageOutputCosts(spec: GoogleImageSpec, pricing: Pricing) {
   if (!validGoogleImagePricing(spec, pricing)) return [];
   const fx = BigInt(pricing.provider_cost_to_cny_ppm!);
@@ -63,7 +64,7 @@ export function googleImageOutputCosts(spec: GoogleImageSpec, pricing: Pricing) 
     return {
       resolution,
       cny: Number(cnyNano) / 1_000_000_000,
-      credits: Number((cnyNano + 19_999_999n) / 20_000_000n),
+      credits: Number((cnyNano + 19_999n) / 20_000n) / 1000,
     };
   });
 }

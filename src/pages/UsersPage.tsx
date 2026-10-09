@@ -19,7 +19,7 @@ import type { TableColumnsType } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
-import { Count, Mono } from "@/components/cells";
+import { Credits, Mono } from "@/components/cells";
 import { usePagedList } from "@/hooks/usePagedList";
 import { getUser, listUsers } from "@/api/queries";
 import { listPlans } from "@/api/plans";
@@ -32,7 +32,7 @@ import type {
   User,
   UserWorkspaceItem,
 } from "@/types/domain";
-import { fmtTime } from "@/utils/format";
+import { fmtCredits, fmtTime } from "@/utils/format";
 
 const columns: TableColumnsType<User> = [
   { title: "ID", dataIndex: "id", width: 80, render: (v) => <Mono>{v}</Mono> },
@@ -197,11 +197,11 @@ function UserDetailDrawer({
                 <Space size={24}>
                   <span>
                     余额:
-                    <Count value={w.wallet?.balance ?? 0} />
+                    <Credits value={w.wallet?.balance ?? 0} />
                   </span>
                   <span>
                     冻结:
-                    <Count value={w.wallet?.frozen ?? 0} />
+                    <Credits value={w.wallet?.frozen ?? 0} />
                   </span>
                   <span>
                     订阅:
@@ -295,7 +295,7 @@ function GrantPlanModal({
             placeholder="选择要授予的套餐"
             options={(plans.data ?? []).map((p) => ({
               value: p.id,
-              label: `${p.name}(${p.code})· 赠 ${p.base_credits} 积分`,
+              label: `${p.name}(${p.code})· 赠 ${fmtCredits(p.base_credits)} 积分`,
             }))}
           />
         </Form.Item>
@@ -343,13 +343,14 @@ function AdjustCreditModal({
       <Form form={form} layout="vertical" onFinish={(v) => mut.mutate(v)}>
         <Form.Item
           name="amount"
-          label="积分数额(正整数,累加不覆盖;上限 10 亿)"
-          rules={[{ required: true, message: "请输入正整数" }]}
+          label="积分数额(正数,最多 3 位小数,累加不覆盖;上限 10 亿)"
+          rules={[{ required: true, message: "请输入正数(最多 3 位小数)" }]}
         >
           <InputNumber
-            min={1}
+            min={0.001}
             max={1_000_000_000}
-            precision={0}
+            precision={3}
+            step={0.001}
             style={{ width: "100%" }}
             placeholder="1000"
           />

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Drawer, Input, Select, Space, Table, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { ListPageShell } from '@/components/ListPageShell'
-import { Mono, StatusTag } from '@/components/cells'
+import { Credits, Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
 import {
   listWorkspaceAuditLogs,
@@ -44,8 +44,8 @@ const memberStatColumns: TableColumnsType<WorkspaceMemberStat> = [
   { title: '用户 ID', dataIndex: 'user_id', width: 100, render: (v) => <Mono>{v}</Mono> },
   { title: '昵称', dataIndex: 'nickname', render: (v) => v || '—' },
   { title: '角色', dataIndex: 'role', width: 90, render: (v) => ROLE_LABEL[v] ?? v },
-  { title: '本月消耗', dataIndex: 'month_credits', width: 100, render: (v) => <Mono>{v}</Mono> },
-  { title: '累计消耗', dataIndex: 'total_credits', width: 100, render: (v) => <Mono>{v}</Mono> },
+  { title: '本月消耗', dataIndex: 'month_credits', width: 100, render: (v) => <Credits value={v} /> },
+  { title: '累计消耗', dataIndex: 'total_credits', width: 100, render: (v) => <Credits value={v} /> },
   { title: '本月作品', dataIndex: 'month_works', width: 100, render: (v) => <Mono>{v}</Mono> },
   { title: '累计作品', dataIndex: 'total_works', width: 100, render: (v) => <Mono>{v}</Mono> },
 ]

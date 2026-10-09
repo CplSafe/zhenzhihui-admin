@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Input, Space } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { ListPageShell } from '@/components/ListPageShell'
-import { Count, Mono } from '@/components/cells'
+import { Credits, Mono } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
 import { listWallets } from '@/api/queries'
 import type { AdminWalletItem } from '@/types/domain'
@@ -32,13 +32,13 @@ const columns: TableColumnsType<AdminWalletItem> = [
     title: '可用余额',
     dataIndex: ['wallet', 'balance'],
     width: 140,
-    render: (v) => <Count value={v} />,
+    render: (v) => <Credits value={v} />,
   },
   {
     title: '冻结',
     dataIndex: ['wallet', 'frozen'],
     width: 120,
-    render: (v) => <Count value={v} />,
+    render: (v) => <Credits value={v} />,
   },
   {
     title: '所有者 ID',

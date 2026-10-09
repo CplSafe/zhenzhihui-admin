@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Input, Select, Space } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { ListPageShell } from '@/components/ListPageShell'
-import { Count, Money, Mono, StatusTag } from '@/components/cells'
+import { Credits, Money, Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
 import { listPaymentOrders } from '@/api/queries'
 import type { PaymentOrder } from '@/types/domain'
@@ -39,7 +39,7 @@ const columns: TableColumnsType<PaymentOrder> = [
     title: '积分',
     dataIndex: 'credits',
     width: 100,
-    render: (v) => <Count value={v} />,
+    render: (v) => <Credits value={v} />,
   },
   {
     title: '状态',

@@ -36,3 +36,13 @@ export const fmtDate = (t?: string | null): string => fmtDayjs(t, "YYYY-MM-DD");
 // 千分位整数(用于积分等计数)。
 export const fmtNumber = (n?: number | null): string =>
   hasValue(n) ? n.toLocaleString("en-US") : DASH;
+
+// 积分:后端精度 0.001,千分位 + 最多 3 位小数(去尾零),供对账。
+const CREDITS_FMT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 });
+
+export const fmtCredits = (n?: number | null): string =>
+  hasValue(n) ? CREDITS_FMT.format(n) : DASH;
+
+// 带符号积分(流水变动):+1,234.5 / -0.044。
+export const fmtSignedCredits = (n?: number | null): string =>
+  hasValue(n) ? `${n > 0 ? "+" : ""}${CREDITS_FMT.format(n)}` : DASH;

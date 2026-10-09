@@ -3,7 +3,7 @@ import { Button, Drawer, Descriptions, Input, Select, Space, Typography } from '
 import type { TableColumnsType } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { ListPageShell } from '@/components/ListPageShell'
-import { Count, Money, Mono, StatusTag } from '@/components/cells'
+import { Count, Credits, Money, Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
 import { getAITask, listAITasks } from '@/api/queries'
 import type { ApiError } from '@/types/api'
@@ -73,7 +73,7 @@ export function AITasksPage() {
       title: '实扣积分',
       dataIndex: 'actual_cost',
       width: 110,
-      render: (v) => <Count value={v} />,
+      render: (v) => <Credits value={v} />,
     },
     {
       title: '积分收入',
@@ -201,8 +201,8 @@ export function AITasksPage() {
               {detail.data.operation_code}
             </Descriptions.Item>
             <Descriptions.Item label="预估 / 实际">
-              <Count value={detail.data.estimated_cost} /> /{' '}
-              <Count value={detail.data.actual_cost} />
+              <Credits value={detail.data.estimated_cost} /> /{' '}
+              <Credits value={detail.data.actual_cost} />
             </Descriptions.Item>
             <Descriptions.Item label="上游用量">
               <Count value={detail.data.usage_total_tokens} /> token

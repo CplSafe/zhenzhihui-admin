@@ -20,7 +20,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Can } from "@/components/Can";
 import { EntitlementsField } from "@/components/EntitlementsField";
 import type { ModelOption } from "@/components/EntitlementsField";
-import { Count, Money, Mono, RowActions, StatusTag } from "@/components/cells";
+import { Credits, Money, Mono, RowActions, StatusTag } from "@/components/cells";
 import {
   createPlan,
   disablePlan,
@@ -238,7 +238,7 @@ export function PlansPage() {
       title: "赠送积分",
       dataIndex: "base_credits",
       width: 110,
-      render: (v) => <Count value={v} />,
+      render: (v) => <Credits value={v} />,
     },
     {
       title: "状态",
@@ -420,7 +420,7 @@ export function PlansPage() {
             label="赠送积分(注册赠送套餐即试用积分)"
             rules={[{ required: true }]}
           >
-            <InputNumber min={0} style={{ width: "100%" }} />
+            <InputNumber min={0} precision={3} step={0.001} style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item name="status" label="状态" rules={[{ required: true }]}>
             <Select

@@ -17,7 +17,7 @@ import {
 import type { TableColumnsType } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { ListPageShell } from "@/components/ListPageShell";
-import { Count, Mono, StatusTag } from "@/components/cells";
+import { Count, Credits, Mono, StatusTag } from "@/components/cells";
 import { usePagedList } from "@/hooks/usePagedList";
 import { getAgentSession, getAgentStats, listAgentSessions } from "@/api/agent";
 import type { ApiError } from "@/types/api";
@@ -32,7 +32,7 @@ import {
   AGENT_KINDS,
   AGENT_STATUSES,
 } from "@/types/domain";
-import { fmtTime } from "@/utils/format";
+import { fmtCredits, fmtTime } from "@/utils/format";
 
 interface Filters {
   workspace_id?: number;
@@ -174,7 +174,7 @@ export function AgentSessionsPage() {
       title: "已耗积分",
       dataIndex: "spent_credits",
       width: 100,
-      render: (v) => <Count value={v} />,
+      render: (v) => <Credits value={v} />,
     },
     {
       title: "更新时间",
@@ -232,7 +232,7 @@ export function AgentSessionsPage() {
             <Card size="small">
               <Statistic
                 title="累计消耗积分"
-                value={stats.data?.total_credits ?? 0}
+                value={fmtCredits(stats.data?.total_credits ?? 0)}
                 loading={stats.isFetching}
               />
             </Card>
@@ -325,10 +325,10 @@ export function AgentSessionsPage() {
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="积分上限">
-                {session.credit_cap > 0 ? session.credit_cap : "不限"}
+                {session.credit_cap > 0 ? fmtCredits(session.credit_cap) : "不限"}
               </Descriptions.Item>
               <Descriptions.Item label="已耗积分">
-                <Count value={session.spent_credits} />
+                <Credits value={session.spent_credits} />
               </Descriptions.Item>
               <Descriptions.Item label="累计 tokens">
                 <Count value={session.total_tokens} />

@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import { JsonField } from "@/components/JsonField";
 import { GoogleImagePricingField } from "@/components/GoogleImagePricingField";
 import { googleImageSpec } from "@/utils/googleImagePricing";
+import { fmtCredits } from "@/utils/format";
 import type { Pricing, PromoPricing, TierTokenRate } from "@/types/domain";
 
 interface PricingFieldProps {
@@ -284,7 +285,8 @@ export function PricingField({
             render: (_, r) => (
               <InputNumber
                 min={0}
-                precision={0}
+                precision={3}
+                step={0.001}
                 style={{ width: "100%" }}
                 value={promoTable[r.tier]}
                 onChange={(v) => setPromoRate(r.tier, v)}
@@ -340,7 +342,8 @@ export function PricingField({
               render: (_, r) => (
                 <InputNumber
                   min={0}
-                  precision={0}
+                  precision={3}
+                  step={0.001}
                   style={{ width: "100%" }}
                   value={secondTable[r.tier]}
                   onChange={(v) => setSecondRate(r.tier, v)}
@@ -356,7 +359,8 @@ export function PricingField({
                     render: (_: unknown, r: { tier: string }) => (
                       <InputNumber
                         min={0}
-                        precision={0}
+                        precision={3}
+                        step={0.001}
                         style={{ width: "100%" }}
                         value={withVideoTable[r.tier]}
                         onChange={(v) => setWithVideoRate(r.tier, v)}
@@ -403,7 +407,8 @@ export function PricingField({
             <FieldLabel text="兜底单价(每秒积分,清晰度档没配时用)" />
             <InputNumber
               min={0}
-              precision={0}
+              precision={3}
+              step={0.001}
               style={{ width: 240 }}
               value={pricing.output_credit_rate}
               onChange={(v) => setRate("output_credit_rate", v)}
@@ -414,7 +419,8 @@ export function PricingField({
             <FieldLabel text="每秒预冻积分(hold,清晰度档与兜底单价都没配时用)" />
             <InputNumber
               min={0}
-              precision={0}
+              precision={3}
+              step={0.001}
               style={{ width: 240 }}
               value={pricing.hold_credits_per_second}
               onChange={(v) => setRate("hold_credits_per_second", v)}
@@ -426,7 +432,8 @@ export function PricingField({
             <FieldLabel text="超额输入图单价(每张积分,仅 MiniMax H3 用)" />
             <InputNumber
               min={0}
-              precision={0}
+              precision={3}
+              step={0.001}
               style={{ width: 240 }}
               value={pricing.credits_per_extra_input_image}
               onChange={(v) => setRate("credits_per_extra_input_image", v)}
@@ -460,7 +467,8 @@ export function PricingField({
               render: (_, r) => (
                 <InputNumber
                   min={0}
-                  precision={0}
+                  precision={3}
+                  step={0.001}
                   style={{ width: "100%" }}
                   value={tierTable[r.tier]?.no_video}
                   onChange={(v) => setTier(r.tier, "no_video", v)}
@@ -474,7 +482,8 @@ export function PricingField({
               render: (_, r) => (
                 <InputNumber
                   min={0}
-                  precision={0}
+                  precision={3}
+                  step={0.001}
                   style={{ width: "100%" }}
                   value={tierTable[r.tier]?.with_video}
                   onChange={(v) => setTier(r.tier, "with_video", v)}
@@ -503,7 +512,8 @@ export function PricingField({
           <FieldLabel text={isLegacyGoogle ? "输入单价（此模型须为 0）" : "输入单价(积分 / 千 token)"} />
           <InputNumber
             min={0}
-            precision={0}
+            precision={3}
+            step={0.001}
             style={{ width: 220 }}
             value={pricing.input_credit_rate}
             onChange={(v) => setRate("input_credit_rate", v)}
@@ -520,7 +530,8 @@ export function PricingField({
           />
           <InputNumber
             min={0}
-            precision={0}
+            precision={3}
+            step={0.001}
             style={{ width: 240 }}
             value={pricing.output_credit_rate}
             onChange={(v) => setRate("output_credit_rate", v)}
@@ -534,9 +545,9 @@ export function PricingField({
         style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
       >
         {isLegacyGoogle ? (
-          <>固定售价：<Typography.Text strong>{outRate} 积分 / 张 = ¥{(outRate * 0.02).toFixed(2)} / 张</Typography.Text>。这是自定义售价，不是官方成本计费。</>
+          <>固定售价：<Typography.Text strong>{fmtCredits(outRate)} 积分 / 张 = ¥{(Math.round(outRate * 1000) * 2 / 100_000).toFixed(2)} / 张</Typography.Text>。这是自定义售价，不是官方成本计费。</>
         ) : (
-          <>单价示例：1000 输入 + 1000 输出 token = {inRate + outRate} 积分（输入 {inRate} + 输出 {outRate}）。{capability === "image" ? "图片模型的预扣与结算取决于供应商返回的用量，按次单位不代表固定每张价格。" : "实际按上游返回的真实 token 结算。"}</>
+          <>单价示例：1000 输入 + 1000 输出 token = {fmtCredits((Math.round(inRate * 1000) + Math.round(outRate * 1000)) / 1000)} 积分（输入 {fmtCredits(inRate)} + 输出 {fmtCredits(outRate)}）。{capability === "image" ? "图片模型的预扣与结算取决于供应商返回的用量，按次单位不代表固定每张价格。" : "实际按上游返回的真实 token 结算。"}</>
         )}
       </Typography.Paragraph>
 

@@ -14,7 +14,7 @@ import dayjs, { type Dayjs } from 'dayjs'
 import { getOverview } from '@/api/queries'
 import type { ApiError } from '@/types/api'
 import type { Overview } from '@/types/domain'
-import { centsToYuan, fmtNumber, humanBytes } from '@/utils/format'
+import { centsToYuan, fmtCredits, fmtNumber, humanBytes } from '@/utils/format'
 
 const { RangePicker } = DatePicker
 
@@ -126,7 +126,7 @@ export function OverviewPage() {
         <Col xs={12} md={8} lg={6}>
           <KpiCard
             title="区间消耗积分"
-            value={fmtNumber(data?.credits_consumed)}
+            value={fmtCredits(data?.credits_consumed)}
           />
         </Col>
         <Col xs={12} md={8} lg={6}>

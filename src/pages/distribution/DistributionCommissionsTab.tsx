@@ -7,7 +7,7 @@ import {
   retryDistributionSettlement,
 } from "@/api/distribution";
 import { Can } from "@/components/Can";
-import { Count, Money, Mono, StatusTag } from "@/components/cells";
+import { Credits, Money, Mono, StatusTag } from "@/components/cells";
 import { usePagedList } from "@/hooks/usePagedList";
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
@@ -157,7 +157,7 @@ export function DistributionCommissionsTab() {
         <Space orientation="vertical" size={0}>
           <span>实收 <Money cents={row.revenue_cents} /></span>
           <Typography.Text type="secondary">
-            <Count value={row.credits} /> 积分 · 成本 <Money cents={row.cost_cents} />
+            <Credits value={row.credits} /> 积分 · 成本 <Money cents={row.cost_cents} />
             {` `}（<Money cents={row.cost_cents_per_1000_credits} />/千积分）
           </Typography.Text>
           <span>利润 <Money cents={row.profit_cents} /></span>

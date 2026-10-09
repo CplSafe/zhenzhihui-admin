@@ -41,10 +41,18 @@ test("model changes require updated official rates, preserving configured FX", (
   assert.deepEqual(next.provider_cost_cents_per_million_tokens_by_usage, { input: 200, text_output: 1200, image_output: 12000 });
 });
 
+// credits = ceil(cnyNano / 20,000) milli / 1000; cnyNano = ceil(tokens × rate × 10 × 7.3) at FX 7,300,000 ppm.
 test("cost preview shows image-output-only floors, not the old 200 credits", () => {
-  assert.deepEqual(googleImageOutputCosts(basic, applyGoogleImagePricing(basic)).map(r => r.credits), [15]);
-  assert.deepEqual(googleImageOutputCosts(nano, applyGoogleImagePricing(nano)).map(r => r.credits), [17, 25, 37, 56]);
-  assert.deepEqual(googleImageOutputCosts(pro, applyGoogleImagePricing(pro)).map(r => r.credits), [50, 50, 88]);
+  // 1K: 282,510,000 nano ÷ 20,000 = 14,125.5 → 14,126 milli = 14.126
+  assert.deepEqual(googleImageOutputCosts(basic, applyGoogleImagePricing(basic)).map(r => r.credits), [14.126]);
+  // 512: 327,186,000 nano ÷ 20,000 = 16,359.3 → 16,360 milli = 16.36
+  // 1K:  490,560,000 nano ÷ 20,000 = 24,528 milli = 24.528
+  // 2K:  735,840,000 nano ÷ 20,000 = 36,792 milli = 36.792
+  // 4K:  1,103,760,000 nano ÷ 20,000 = 55,188 milli = 55.188
+  assert.deepEqual(googleImageOutputCosts(nano, applyGoogleImagePricing(nano)).map(r => r.credits), [16.36, 24.528, 36.792, 55.188]);
+  // 1K/2K: 981,120,000 nano ÷ 20,000 = 49,056 milli = 49.056
+  // 4K:    1,752,000,000 nano ÷ 20,000 = 87,600 milli = 87.6
+  assert.deepEqual(googleImageOutputCosts(pro, applyGoogleImagePricing(pro)).map(r => r.credits), [49.056, 49.056, 87.6]);
   assert.equal(googleImageOutputCosts(nano, applyGoogleImagePricing(nano))[1].cny, 0.49056);
 });
 

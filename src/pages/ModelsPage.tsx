@@ -38,7 +38,7 @@ import {
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
 import type { ModelVersion } from "@/types/domain";
-import { fmtTime } from "@/utils/format";
+import { fmtCredits, fmtTime } from "@/utils/format";
 import { copiedModelFormValues, modelFormValues } from "@/utils/modelForm";
 
 interface Filters {
@@ -385,7 +385,7 @@ export function ModelsPage() {
                 <div style={{ fontSize: 12, color: "#666" }}>
                   输入 {probe.prompt_tokens} token · 输出{" "}
                   {probe.completion_tokens} token · 本次约扣{" "}
-                  {probe.estimated_credits} 积分(测连通不实际扣费)
+                  {fmtCredits(probe.estimated_credits)} 积分(测连通不实际扣费)
                 </div>
               </div>
             }

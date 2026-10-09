@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { Input, Select, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { ListPageShell } from '@/components/ListPageShell'
-import { Count, Mono } from '@/components/cells'
+import { Credits, Mono } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
 import { listCreditLedgers } from '@/api/queries'
 import type { CreditLedger } from '@/types/domain'
-import { fmtTime } from '@/utils/format'
+import { fmtSignedCredits, fmtTime } from '@/utils/format'
 
 const KIND_COLOR: Record<string, string> = {
   freeze: 'gold',
@@ -35,7 +35,7 @@ const columns: TableColumnsType<CreditLedger> = [
     width: 110,
     render: (v: number) => (
       <span className="tnum" style={{ color: v < 0 ? '#ea2261' : '#0d253d' }}>
-        {v > 0 ? `+${v}` : v}
+        {fmtSignedCredits(v)}
       </span>
     ),
   },
@@ -43,13 +43,13 @@ const columns: TableColumnsType<CreditLedger> = [
     title: '余额',
     dataIndex: 'balance_after',
     width: 110,
-    render: (v) => <Count value={v} />,
+    render: (v) => <Credits value={v} />,
   },
   {
     title: '冻结后',
     dataIndex: 'frozen_after',
     width: 110,
-    render: (v) => <Count value={v} />,
+    render: (v) => <Credits value={v} />,
   },
   { title: '原因', dataIndex: 'reason', ellipsis: true },
   {

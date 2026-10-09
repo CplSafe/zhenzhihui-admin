@@ -16,7 +16,7 @@ import type { TableColumnsType } from "antd";
 import { Table } from "antd";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Can } from "@/components/Can";
-import { Count, Money, Mono, RowActions, StatusTag } from "@/components/cells";
+import { Credits, Money, Mono, RowActions, StatusTag } from "@/components/cells";
 import {
   createCreditPackage,
   disableCreditPackage,
@@ -129,7 +129,7 @@ export function CreditPackagesPage() {
       title: "积分",
       dataIndex: "credits",
       width: 120,
-      render: (v) => <Count value={v} />,
+      render: (v) => <Credits value={v} />,
     },
     {
       title: "状态",
@@ -224,7 +224,7 @@ export function CreditPackagesPage() {
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item name="credits" label="积分数" rules={[{ required: true }]}>
-            <InputNumber min={1} style={{ width: "100%" }} />
+            <InputNumber min={0.001} precision={3} step={0.001} style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item name="status" label="状态" rules={[{ required: true }]}>
             <Select

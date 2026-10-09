@@ -1,6 +1,7 @@
 import { Alert, Button, InputNumber, Space, Table, Typography } from "antd";
 import { CheckOutlined } from "@ant-design/icons";
 import type { Pricing } from "@/types/domain";
+import { fmtCredits } from "@/utils/format";
 import {
   applyGoogleImagePricing,
   googleImageOutputCosts,
@@ -54,7 +55,7 @@ export function GoogleImagePricingField({ spec, value, onChange }: {
         ]}
       />
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
-        单位：美元 / 百万 token。1 积分 = ¥0.02，全部用量成本合计后向上取整。
+        单位：美元 / 百万 token。1 积分 = ¥0.02，全部用量成本合计后向上取整到 0.001 积分。
       </Typography.Paragraph>
       <label style={{ display: "block", marginBottom: 12 }}>
         <div style={{ marginBottom: 4 }}>结算汇率（人民币 / 美元，非实时汇率）</div>
@@ -80,7 +81,7 @@ export function GoogleImagePricingField({ spec, value, onChange }: {
             columns={[
               { title: "分辨率", dataIndex: "resolution" },
               { title: "成本 / 张", render: (_, row) => `¥${row.cny.toFixed(4)}` },
-              { title: "仅输出折算积分", dataIndex: "credits" },
+              { title: "仅输出折算积分", dataIndex: "credits", render: (v: number) => fmtCredits(v) },
             ]}
           />
           <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
