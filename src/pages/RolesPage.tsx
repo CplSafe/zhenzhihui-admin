@@ -60,11 +60,12 @@ export function RolesPage() {
         <Form.Item name="permissions" hidden><Select mode="multiple" /></Form.Item>
         <Typography.Title level={5}>菜单与操作权限</Typography.Title>
         <Typography.Paragraph type="secondary">“查看”控制菜单及读取接口；“操作”控制对应功能的修改按钮和写入接口。多个页面共用同一权限时会一并生效。</Typography.Paragraph>
+        <Space style={{marginBottom:12}}><Button onClick={() => form.setFieldValue('permissions', (permissions.data ?? []).filter(p => p.code.endsWith('.read') || p.code === Permission.LOGS_LIVE).map(p => p.code))}>全部设为只读</Button><Button onClick={() => form.setFieldValue('permissions', [])}>清空权限</Button></Space>
         <Space orientation="vertical" size={12} style={{ width: '100%' }}>
           {groups.map(group => <Card size="small" key={group.key} title={group.label}>
             <Checkbox.Group style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }} value={selected.filter((p: string) => group.permissions.some(x => x.code === p))}
               onChange={values => form.setFieldValue('permissions', [...selected.filter((p: string) => !group.permissions.some(x => x.code === p)), ...values])}
-              options={group.permissions.map(p => ({ value: p.code, label: p.name, disabled: superOnlyPermissions.has(p.code) }))} />
+              options={group.permissions.map(p => ({ value: p.code, label: p.name, disabled: superOnlyPermissions.has(p.code) || (editing !== null && editing !== 'new' && editing.code === 'readonly_admin' && !p.code.endsWith('.read') && p.code !== Permission.LOGS_LIVE) }))} />
           </Card>)}
         </Space>
       </Form>

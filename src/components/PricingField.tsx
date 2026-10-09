@@ -1,3 +1,4 @@
+import { MediaCostPricingField } from "@/components/MediaCostPricingField";
 import { useState } from "react";
 import {
   Collapse,
@@ -321,6 +322,10 @@ export function PricingField({
         {renderAdvanced()}
       </div>
     );
+  }
+
+  if (pricing.unit === "provider_cost") {
+    return <div><MediaCostPricingField value={pricing} onChange={emit} />{renderAdvanced()}</div>;
   }
 
   if (isVideo) {
