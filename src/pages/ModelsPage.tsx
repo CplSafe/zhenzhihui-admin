@@ -39,6 +39,7 @@ import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
 import type { ModelVersion } from "@/types/domain";
 import { fmtTime } from "@/utils/format";
+import { copiedModelFormValues, modelFormValues } from "@/utils/modelForm";
 
 interface Filters {
   provider?: string;
@@ -67,6 +68,15 @@ export function ModelsPage() {
   const [filters, setFilters] = useState<Filters>({});
   // editId: null=未开抽屉, 0=新增, >0=编辑该 ID
   const [editId, setEditId] = useState<number | null>(null);
+  // 新增时以哪条模型为模板(复制);null 表示空白新增。
+  const [copySourceId, setCopySourceId] = useState<number | null>(null);
+  const isCopy = editId === 0 && copySourceId !== null;
+  // 编辑拉自身详情,复制拉模板详情。
+  const detailId = editId !== null && editId > 0 ? editId : isCopy ? copySourceId : null;
+  const openDrawer = (id: number | null, sourceId: number | null = null) => {
+    setEditId(id);
+    setCopySourceId(sourceId);
+  };
   // 测连通结果(回复 + token + 扣费预览),切换编辑目标时清空。
   const [probe, setProbe] = useState<TestConnectionResult | null>(null);
   const [form] = Form.useForm<ModelWriteBody>();
@@ -91,17 +101,18 @@ export function ModelsPage() {
     fetcher: listModels,
   });
 
-  // 编辑模式拉详情(含 system_prompts 等结构化字段)回填表单。
+  // 编辑 / 复制模式拉详情(含 system_prompts 等结构化字段)回填表单。
   const detail = useQuery<ModelVersion, ApiError>({
-    queryKey: ["admin", "model", editId],
-    queryFn: () => getModel(editId as number),
-    enabled: editId !== null && editId > 0,
+    queryKey: ["admin", "model", detailId],
+    queryFn: () => getModel(detailId as number),
+    enabled: detailId !== null,
   });
 
   // 切换编辑目标时在渲染期清空 JSON 校验态(避免在 effect 里 setState)。
-  const [prevEditId, setPrevEditId] = useState(editId);
-  if (prevEditId !== editId) {
-    setPrevEditId(editId);
+  const target = `${editId}:${copySourceId}`;
+  const [prevTarget, setPrevTarget] = useState(target);
+  if (prevTarget !== target) {
+    setPrevTarget(target);
     setJsonValid({});
     setProbe(null);
   }
@@ -110,31 +121,19 @@ export function ModelsPage() {
   // 当前 detail 查询在抽屉打开期间不会被 invalidate(refetchOnWindowFocus 全局关闭),
   // 故不会用刷新数据覆盖未保存编辑;若将来给该查询加 invalidate,需改为"每目标只填一次"。
   useEffect(() => {
+    if (isCopy) {
+      if (detail.data) form.setFieldsValue(copiedModelFormValues(detail.data));
+      return;
+    }
     if (editId === 0) {
       form.resetFields();
       form.setFieldsValue({ enabled: true, task_mode: "sync" });
       return;
     }
     if (editId && editId > 0 && detail.data) {
-      const d = detail.data;
-      form.setFieldsValue({
-        provider: d.provider,
-        model: d.model,
-        version: d.version,
-        display_name: d.display_name,
-        logo_url: d.logo_url,
-        capability: d.capability,
-        enabled: d.enabled,
-        task_mode: d.task_mode,
-        allowed_plans: d.allowed_plans,
-        operation_codes: d.operation_codes,
-        pricing: d.pricing,
-        params_schema: d.params_schema,
-        result_schema: d.result_schema,
-        system_prompts: d.system_prompts,
-      });
+      form.setFieldsValue(modelFormValues(detail.data));
     }
-  }, [editId, detail.data, form]);
+  }, [editId, isCopy, detail.data, form]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-models-list"] });
@@ -149,7 +148,7 @@ export function ModelsPage() {
       editId && editId > 0 ? updateModel(editId, body) : createModel(body),
     onSuccess: () => {
       message.success(editId && editId > 0 ? "已更新模型" : "已新增模型");
-      setEditId(null);
+      openDrawer(null);
       invalidate();
     },
     onError,
@@ -252,12 +251,15 @@ export function ModelsPage() {
       title: "操作",
       key: "action",
       fixed: "right",
-      width: 180,
+      width: 220,
       render: (_, r) => (
         <Can permission={Permission.MODELS_WRITE} fallback={<span>-</span>}>
           <Space size="small">
-            <Button type="link" size="small" onClick={() => setEditId(r.id)}>
+            <Button type="link" size="small" onClick={() => openDrawer(r.id)}>
               编辑
+            </Button>
+            <Button type="link" size="small" onClick={() => openDrawer(0, r.id)}>
+              复制
             </Button>
             {r.enabled ? (
               <Button
@@ -318,7 +320,7 @@ export function ModelsPage() {
               />
             </Space>
             <Can permission={Permission.MODELS_WRITE}>
-              <Button type="primary" onClick={() => setEditId(0)}>
+              <Button type="primary" onClick={() => openDrawer(0)}>
                 新增模型
               </Button>
             </Can>
@@ -333,15 +335,21 @@ export function ModelsPage() {
       />
 
       <Drawer
-        title={isEdit ? `编辑模型 #${editId}` : "新增模型"}
+        title={
+          isEdit
+            ? `编辑模型 #${editId}`
+            : isCopy
+              ? `复制模型 #${copySourceId}(填新的 Version 后保存)`
+              : "新增模型"
+        }
         width={720}
         open={editId !== null}
-        onClose={() => setEditId(null)}
-        loading={isEdit && detail.isFetching}
+        onClose={() => openDrawer(null)}
+        loading={(isEdit || isCopy) && detail.isFetching}
         destroyOnHidden
         extra={
           <Space>
-            <Button onClick={() => setEditId(null)}>取消</Button>
+            <Button onClick={() => openDrawer(null)}>取消</Button>
             {isEdit && (
               <Button
                 loading={testMut.isPending}
