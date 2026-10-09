@@ -41,7 +41,7 @@ export function AITasksPage() {
   const [filters, setFilters] = useState<Filters>({})
   const [activeId, setActiveId] = useState<number | null>(null)
 
-  const { items, loading, error, pagination } = usePagedList<AITask, Filters>({
+  const { items, loading, error, pagination, refetch } = usePagedList<AITask, Filters>({
     queryKey: 'admin-ai-tasks-list',
     filters,
     fetcher: listAITasks,
@@ -128,6 +128,7 @@ export function AITasksPage() {
         title="AI 任务"
         filters={
           <Space wrap>
+ <Button loading={loading} onClick={() => void refetch()}>刷新任务</Button>
             <Input
               allowClear
               placeholder="workspace ID"

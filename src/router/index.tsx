@@ -1,8 +1,11 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { RequirePermission } from "@/components/RequirePermission";
 import { MainLayout } from "@/layouts/MainLayout";
+import { RolesPage } from "@/pages/RolesPage";
+import { OperationalLogsPage } from "@/pages/OperationalLogsPage";
+import { DefaultAdminPage } from "@/pages/DefaultAdminPage";
 import { OverviewPage } from "@/pages/OverviewPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { WorkspacesPage } from "@/pages/WorkspacesPage";
@@ -32,6 +35,9 @@ import { menuConfig } from "@/router/menuConfig";
 // 各菜单 key 对应的页面组件。
 const pageByKey: Record<string, ReactNode> = {
   overview: <OverviewPage />,
+ roles: <RolesPage />,
+ "request-logs": <OperationalLogsPage key="request" kind="request" />,
+ "server-logs": <OperationalLogsPage key="application" kind="application" />,
   users: <UsersPage />,
   workspaces: <WorkspacesPage />,
   "ai-tasks": <AITasksPage />,
@@ -76,9 +82,9 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
     children: [
-      { index: true, element: <Navigate to="/overview" replace /> },
+      { index: true, element: <DefaultAdminPage /> },
       ...childRoutes,
-      { path: "*", element: <Navigate to="/overview" replace /> },
+      { path: "*", element: <DefaultAdminPage /> },
     ],
   },
 ]);

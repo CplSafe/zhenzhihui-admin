@@ -11,7 +11,7 @@ import {
   Tag,
 } from "antd";
 import type { TableColumnsType } from "antd";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
 import { Mono, StatusTag } from "@/components/cells";
@@ -23,7 +23,7 @@ import {
   listAdminUsers,
   updateAdminUser,
 } from "@/api/adminUsers";
-import { ROLE_OPTIONS } from "@/constants/roles";
+import { listRoles } from "@/api/roles";
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
 import type { AdminUserView } from "@/types/domain";
@@ -42,6 +42,8 @@ interface EditState {
 export function AdminUsersPage() {
   const { message } = App.useApp();
   const qc = useQueryClient();
+ const rolesQuery = useQuery({ queryKey: ["admin-roles"], queryFn: listRoles });
+ const roleOptions = (rolesQuery.data ?? []).map(role => ({ value: role.code, label: `${role.name}${role.status === "disabled" ? "（已禁用）" : ""}`, disabled: role.status !== "active" }));
   const [filters, setFilters] = useState<Filters>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [edit, setEdit] = useState<EditState | null>(null);
@@ -241,6 +243,7 @@ export function AdminUsersPage() {
         onCancel={() => setCreateOpen(false)}
         onOk={() => createForm.submit()}
         confirmLoading={createMut.isPending}
+ okButtonProps={{ disabled: rolesQuery.isLoading || !!rolesQuery.error }}
         destroyOnHidden
       >
         <Form
@@ -259,15 +262,14 @@ export function AdminUsersPage() {
           <Form.Item
             name="roles"
             label="角色"
+ extra={rolesQuery.error ? `角色加载失败：${rolesQuery.error.message}` : "可分配多个角色，权限取并集"}
             rules={[{ required: true, message: "至少选择一个角色" }]}
           >
             <Select
               mode="multiple"
               placeholder="选择角色"
-              options={ROLE_OPTIONS.map((o) => ({
-                value: o.value,
-                label: `${o.label} · ${o.desc}`,
-              }))}
+              options={roleOptions}
+ loading={rolesQuery.isLoading}
             />
           </Form.Item>
           <Form.Item name="remark" label="备注">
@@ -282,10 +284,12 @@ export function AdminUsersPage() {
         onCancel={() => setEdit(null)}
         onOk={() => editForm.submit()}
         confirmLoading={updateMut.isPending}
+ okButtonProps={{ disabled: rolesQuery.isLoading || !!rolesQuery.error }}
         destroyOnHidden
       >
         <Form
           form={editForm}
+          clearOnDestroy
           layout="vertical"
           initialValues={{ roles: edit?.roles, remark: edit?.remark }}
           onFinish={(v) => edit && updateMut.mutate({ id: edit.id, ...v })}
@@ -293,14 +297,13 @@ export function AdminUsersPage() {
           <Form.Item
             name="roles"
             label="角色"
+ extra={rolesQuery.error ? `角色加载失败：${rolesQuery.error.message}` : "可分配多个角色，权限取并集"}
             rules={[{ required: true, message: "至少选择一个角色" }]}
           >
             <Select
               mode="multiple"
-              options={ROLE_OPTIONS.map((o) => ({
-                value: o.value,
-                label: `${o.label} · ${o.desc}`,
-              }))}
+              options={roleOptions}
+ loading={rolesQuery.isLoading}
             />
           </Form.Item>
           <Form.Item name="remark" label="备注">

@@ -337,6 +337,8 @@ export interface Pricing {
   credits_per_thousand_tokens_by_tier?: Record<string, TierTokenRate>;
   // 后台经营分析：供应商成本（分/百万总 token）与积分收入折算（分/千积分）。
   provider_cost_cents_per_million_tokens?: number;
+  provider_cost_cents_per_minute?: number;
+  provider_cost_cents_per_ten_thousand_characters?: number;
   provider_cost_currency?: string;
   provider_cost_to_cny_ppm?: number;
   provider_cost_cents_per_million_tokens_with_video?: number;

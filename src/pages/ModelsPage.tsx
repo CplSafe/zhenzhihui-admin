@@ -60,6 +60,7 @@ const CAPABILITY_OPTIONS = [
   { value: "responses", label: "responses 对话" },
   { value: "image", label: "image 图像" },
   { value: "video", label: "video 视频" },
+  { value: "audio", label: "audio 音频" },
 ];
 
 export function ModelsPage() {

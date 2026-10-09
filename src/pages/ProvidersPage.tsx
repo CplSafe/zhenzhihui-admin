@@ -217,7 +217,7 @@ export function ProvidersPage() {
         type="warning"
         showIcon
         message="密钥安全"
-        description="API Key 加密存储,后台只显示掩码,绝不回显明文。修改 Key 需重新输入整串;留空则保留原 Key 不变。配错 base_url / key 会导致对应 provider 的生图任务全部失败。"
+        description="API Key 加密存储,后台只显示掩码,绝不回显明文。修改 Key 需重新输入整串;留空则保留原 Key 不变。配错 base_url / key 会导致对应 provider 的生成任务失败。"
       />
 
       {error && (
@@ -271,6 +271,7 @@ export function ProvidersPage() {
         ]}
       >
         <Form form={form} layout="vertical" onFinish={(v) => saveMut.mutate(v)}>
+          {editing?.provider === "volcengine-speech" && <Alert type="info" showIcon style={{ marginBottom: 16 }} message="豆包语音独立凭证" description="Seed Audio 1.0 与 Seed TTS 2.0 使用豆包语音控制台的 API Key，Base URL 为 https://openspeech.bytedance.com。配置后到模型管理启用对应模型。测试连接仅检查服务可达，实际权限需生成验证。" />}
           {creating && (
             <Form.Item
               name="provider"

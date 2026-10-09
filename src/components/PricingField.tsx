@@ -51,6 +51,7 @@ const COMMON_KEYS = [
 
 // 计费单位(描述性,后端 validatePricing 要求非空)。按能力给合理默认。
 const UNIT_OPTIONS = [
+  { value: "thousand_characters", label: "按千字符(thousand_characters)" },
   { value: "generation", label: "按次(generation)" },
   { value: "1k_tokens", label: "按千 token(1k_tokens)" },
   { value: "second", label: "按秒(second)" },
@@ -509,7 +510,7 @@ export function PricingField({
       {renderUnit()}
       <Space size="large" wrap>
         <label>
-          <FieldLabel text={isLegacyGoogle ? "输入单价（此模型须为 0）" : "输入单价(积分 / 千 token)"} />
+          <FieldLabel text={pricing.unit === "thousand_characters" ? "输入单价(积分 / 千字符)" : isLegacyGoogle ? "输入单价（此模型须为 0）" : "输入单价(积分 / 千 token)"} />
           <InputNumber
             min={0}
             precision={3}
@@ -544,7 +545,9 @@ export function PricingField({
         type="secondary"
         style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
       >
-        {isLegacyGoogle ? (
+        {capability === "audio" ? (
+          <>Seed Audio 按原始音频秒数结算，按 120 秒上限预冻；Seed TTS 按朗读字符数结算。供应商成本可在高级 JSON 配置 provider_cost_cents_per_minute（分/分钟）或 provider_cost_cents_per_ten_thousand_characters（分/万字符）。</>
+        ) : isLegacyGoogle ? (
           <>固定售价：<Typography.Text strong>{fmtCredits(outRate)} 积分 / 张 = ¥{(Math.round(outRate * 1000) * 2 / 100_000).toFixed(2)} / 张</Typography.Text>。这是自定义售价，不是官方成本计费。</>
         ) : (
           <>单价示例：1000 输入 + 1000 输出 token = {fmtCredits((Math.round(inRate * 1000) + Math.round(outRate * 1000)) / 1000)} 积分（输入 {fmtCredits(inRate)} + 输出 {fmtCredits(outRate)}）。{capability === "image" ? "图片模型的预扣与结算取决于供应商返回的用量，按次单位不代表固定每张价格。" : "实际按上游返回的真实 token 结算。"}</>

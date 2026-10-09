@@ -10,7 +10,9 @@ export function useAdminSession() {
   return useQuery<AdminSession, ApiError>({
     queryKey: ADMIN_SESSION_KEY,
     queryFn: fetchAdminSession,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
     retry: (failureCount, error) =>
       error.httpStatus !== 403 && failureCount < 1,
   });

@@ -175,6 +175,9 @@ export const menuConfig: MenuItemConfig[] = [
     icon: <SafetyCertificateOutlined />,
     permission: Permission.ADMIN_USERS_READ,
   },
+  { key: "roles", path: "/roles", label: "角色与权限", icon: <SafetyCertificateOutlined />, permission: Permission.ROLES_READ },
+  { key: "request-logs", path: "/request-logs", label: "请求日志", icon: <FileSearchOutlined />, permission: Permission.REQUEST_LOGS_READ },
+  { key: "server-logs", path: "/server-logs", label: "应用日志", icon: <FileSearchOutlined />, permission: Permission.SERVER_LOGS_READ },
   {
     key: "audit-logs",
     path: "/audit-logs",
