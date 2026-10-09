@@ -53,7 +53,15 @@ const UNIT_OPTIONS = [
   { value: "generation", label: "按次(generation)" },
   { value: "1k_tokens", label: "按千 token(1k_tokens)" },
   { value: "second", label: "按秒(second)" },
+  // 单价填"积分/千秒",整笔按 秒数×单价÷1000 向上取整;成本价不足 1 积分/秒的语音识别用。
+  { value: "thousand_seconds", label: "按千秒(thousand_seconds)" },
 ] as const;
+
+// 按时长计费的单位下,输出单价的含义随单位变化(语音识别等);其余沿用 token 口径的标签。
+const OUTPUT_RATE_LABEL_BY_UNIT: Record<string, string> = {
+  second: "单价(积分 / 秒)",
+  thousand_seconds: "单价(积分 / 千秒,整笔向上取整)",
+};
 
 type CommonKey = (typeof COMMON_KEYS)[number];
 
@@ -503,7 +511,13 @@ export function PricingField({
           />
         </label>
         <label>
-          <FieldLabel text={isLegacyGoogle ? "固定售价（积分 / 张）" : "输出单价(积分 / 千 token)"} />
+          <FieldLabel
+            text={
+              isLegacyGoogle
+                ? "固定售价（积分 / 张）"
+                : (OUTPUT_RATE_LABEL_BY_UNIT[pricing.unit ?? ""] ?? "输出单价(积分 / 千 token)")
+            }
+          />
           <InputNumber
             min={0}
             precision={0}
