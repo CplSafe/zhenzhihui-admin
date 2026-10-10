@@ -1,4 +1,4 @@
-import { Alert, Button, InputNumber, Space, Table, Typography } from "antd";
+import { Alert, Button, Space, Table, Typography } from "antd";
 import { CheckOutlined } from "@ant-design/icons";
 import type { Pricing } from "@/types/domain";
 import { fmtCredits } from "@/utils/format";
@@ -15,7 +15,6 @@ export function GoogleImagePricingField({ spec, value, onChange }: {
   onChange: (value: Pricing) => void;
 }) {
   const valid = validGoogleImagePricing(spec, value);
-  const fx = value.provider_cost_to_cny_ppm;
   const costs = googleImageOutputCosts(spec, value);
   const usageLabels = { input: "文字 / 图片输入", text_output: "文字 / 思考输出", image_output: "图片输出" };
   return (
@@ -57,19 +56,7 @@ export function GoogleImagePricingField({ spec, value, onChange }: {
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
         单位：美元 / 百万 token。1 积分 = ¥0.02，全部用量成本合计后向上取整到 0.001 积分。
       </Typography.Paragraph>
-      <label style={{ display: "block", marginBottom: 12 }}>
-        <div style={{ marginBottom: 4 }}>结算汇率（人民币 / 美元，非实时汇率）</div>
-        <InputNumber
-          aria-label="结算汇率"
-          min={0.000001}
-          max={Number.MAX_SAFE_INTEGER / 1_000_000}
-          precision={6}
-          step={0.01}
-          style={{ width: 240, maxWidth: "100%" }}
-          value={fx === undefined ? undefined : fx / 1_000_000}
-          onChange={(rate) => onChange({ ...value, provider_cost_to_cny_ppm: rate === null ? undefined : Math.round(rate * 1_000_000) })}
-        />
-      </label>
+      <Typography.Paragraph type="secondary">汇率由系统统一自动同步，来源与日期见模型配置页顶部；不再按模型单独填写。</Typography.Paragraph>
       {valid && (
         <>
           <Typography.Paragraph strong>图片输出成本（不含输入及思考）</Typography.Paragraph>

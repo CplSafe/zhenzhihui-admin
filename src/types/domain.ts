@@ -324,6 +324,8 @@ export interface AdminUserView {
 // 计价配置,对应 catalog.Pricing。chat 模型主要用 input/output_credit_rate(每千 token 积分),
 // 其余字段(视频按秒、并发限制)按需,运营用结构化表单填常用项,生僻项走高级 JSON。
 export interface Pricing {
+  provider_cost_fx_source?: string;
+  provider_cost_fx_date?: string;
   provider_cost_cents_per_extra_input_image?: number;
   input_credit_rate?: number;
   output_credit_rate?: number;

@@ -18,6 +18,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
 import { JsonField } from "@/components/JsonField";
+import { ExchangeRatePanel } from "@/components/ExchangeRatePanel";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { PricingField } from "@/components/PricingField";
 import { googleImageSpec, validGoogleImagePricing } from "@/utils/googleImagePricing";
 import { SystemPromptsField } from "@/components/SystemPromptsField";
@@ -65,6 +67,7 @@ const CAPABILITY_OPTIONS = [
 
 export function ModelsPage() {
   const { message } = App.useApp();
+  const exchangeRate = useExchangeRate();
   const qc = useQueryClient();
   const [filters, setFilters] = useState<Filters>({});
   // editId: null=未开抽屉, 0=新增, >0=编辑该 ID
@@ -290,6 +293,7 @@ export function ModelsPage() {
 
   return (
     <>
+      <ExchangeRatePanel />
       <ListPageShell<ModelVersion>
         title="模型配置"
         filters={
@@ -459,7 +463,7 @@ export function ModelsPage() {
             <Switch />
           </Form.Item>
           <Form.Item name="allowed_plans" label="允许的套餐 (plan code)">
-            <Select mode="tags" placeholder="回车输入,如 pro / enterprise" />
+            <Select mode="tags" placeholder="回车输入,如 30-foundation / 30-team" />
           </Form.Item>
           <Form.Item name="operation_codes" label="操作码 (operation_codes)">
             <Select
@@ -481,6 +485,7 @@ export function ModelsPage() {
             }]}
           >
             <PricingField
+              exchangeRate={exchangeRate.data}
               capability={watchedCapability}
               provider={watchedProvider}
               version={watchedVersion}

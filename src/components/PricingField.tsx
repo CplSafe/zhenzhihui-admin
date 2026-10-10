@@ -1,3 +1,5 @@
+import type { ExchangeRate } from "@/api/exchangeRate";
+import { Alert } from "antd";
 import { MediaCostPricingField } from "@/components/MediaCostPricingField";
 import { useState } from "react";
 import {
@@ -18,6 +20,7 @@ import { fmtCredits } from "@/utils/format";
 import type { Pricing, PromoPricing, TierTokenRate } from "@/types/domain";
 
 interface PricingFieldProps {
+  exchangeRate?: ExchangeRate;
   value?: Pricing;
   onChange?: (value: Pricing) => void;
   // 高级 JSON 解析失败时上报,沿用 ModelsPage 的保存禁用逻辑。
@@ -40,6 +43,8 @@ const COMMON_KEYS = [
   "provider_cost_cents_per_million_tokens",
   "provider_cost_currency",
   "provider_cost_to_cny_ppm",
+  "provider_cost_fx_source",
+  "provider_cost_fx_date",
   "provider_cost_cents_per_million_tokens_with_video",
   "provider_cost_cents_per_million_tokens_by_tier",
   "provider_cost_cents_per_million_tokens_by_usage",
@@ -86,7 +91,20 @@ function FieldLabel({ text }: { text: string }) {
   );
 }
 
-export function PricingField({
+export function PricingField(props: PricingFieldProps) {
+  const p = props.value ?? {};
+  const isUSD = p.provider_cost_currency === "USD";
+  const fx = props.exchangeRate;
+  const effective = isUSD ? { ...p, provider_cost_to_cny_ppm: fx?.rate_ppm || undefined, provider_cost_fx_source: fx?.source, provider_cost_fx_date: fx?.rate_date } : p;
+  return <>
+    <Alert style={{ marginBottom: 12 }} type="info" showIcon title={p.unit === 'provider_cost' ? '按上游成本折算积分' : '按配置积分单价计费'}
+      description={p.unit === 'provider_cost' ? '实际用量 × 上游单价 × 统一汇率 ÷ 0.02，完成后按实际用量多退少补。' : '以下积分单价是实际扣费配置；上游成本用于经营分析。计费单位以各项标注为准。'} />
+    {isUSD && <p>统一美元汇率：{fx?.rate_ppm ? (fx.rate_ppm / 1_000_000).toFixed(6) : '等待同步'} · {fx?.rate_date || '暂无日期'} · {fx?.usable ? '有效' : '美元新请求暂停'}</p>}
+    <PricingEditor {...props} value={effective} />
+  </>;
+}
+
+function PricingEditor({
   value,
   onChange,
   onValidityChange,
