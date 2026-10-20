@@ -31,9 +31,13 @@ import { AgentSettingsPage } from "@/pages/AgentSettingsPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { menuConfig } from "@/router/menuConfig";
+import { PublicVoicesPage } from "@/pages/PublicVoicesPage";
+import { VoiceSlotsPage } from "@/pages/VoiceSlotsPage";
 
 // 各菜单 key 对应的页面组件。
 const pageByKey: Record<string, ReactNode> = {
+  voices: <PublicVoicesPage />,
+  "voice-slots": <VoiceSlotsPage />,
   overview: <OverviewPage />,
  roles: <RolesPage />,
  "request-logs": <OperationalLogsPage key="request" kind="request" />,

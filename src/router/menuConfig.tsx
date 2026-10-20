@@ -12,6 +12,7 @@ import {
   TagsOutlined,
   GiftOutlined,
   KeyOutlined,
+  SoundOutlined,
 } from "@ant-design/icons";
 import type { ReactNode } from "react";
 import { Permission, type PermissionCode } from "@/types/admin";
@@ -111,6 +112,8 @@ export const menuConfig: MenuItemConfig[] = [
     icon: <ApiOutlined />,
     permission: Permission.MODELS_READ,
   },
+  { key: "voices", path: "/voices", label: "公共音色", icon: <SoundOutlined />, permission: Permission.MODELS_READ },
+  { key: "voice-slots", path: "/voice-slots", label: "复刻槽位", icon: <SoundOutlined />, permission: Permission.SETTINGS_READ },
   {
     key: "banners",
     path: "/banners",

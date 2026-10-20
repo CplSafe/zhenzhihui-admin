@@ -59,3 +59,12 @@ src/
 ## 待办
 
 后台页面代码待 `docs/` 下的 MD 规格补充后逐个生成。
+
+## 音色管理（2026-10-20）
+
+- 公共音色 `/voices`：列表、搜索、状态筛选、新增/编辑、启停、已有音频试听。读取使用 `admin.models.read`，写入使用 `admin.models.write`。
+- 复刻槽位 `/voice-slots`：输入工作空间 ID 查看已分配槽位，确认预付费后分配名额，凭证轮换后核验重绑。读取使用 `admin.settings.read`，写入使用 `admin.settings.write`。
+- 接口均在 `/api/v1/admin`：`GET/PUT /voices/public`、`GET/POST /voices/slots`、`POST /voices/slots/:id/rebind`。公共列表包含停用条目，编辑时供应商 ID 锁定。预付槽位不自动购买、回收、跨空间复用；试听不触发付费生成。
+- 页面只使用真实 API，无运行时模拟数据。浏览器验收用隔离请求数据测试表单、权限和响应式，不会操作线上供应商。
+- 本轮验证：Node 22 下 `npm run build`、`npm test`（12 项）、改动文件 ESLint；后端新增列表及权限测试；Playwright 验证编辑、预付确认、分配、重绑、只读权限和 390px 布局。全仓 ESLint 的 `WorkspacesPage.tsx` 两处既有 effect 警告为 error，未在本轮修改。
+- 发布时需先发布提供 `GET /admin/voices/public` 的后端，再发布本管理端。尚未使用真实供应商凭证验证槽位重绑；需要运营使用已购名额验收。
