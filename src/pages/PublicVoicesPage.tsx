@@ -18,7 +18,7 @@ import type { TableColumnsType } from "antd";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Can } from "@/components/Can";
 import { usePagedList } from "@/hooks/usePagedList";
-import { listPublicVoices, savePublicVoice } from "@/api/voices";
+import { listPublicVoices, savePublicVoice, syncPublicVoices } from "@/api/voices";
 import type {
   PublicVoice,
   PublicVoiceBody,
@@ -29,7 +29,7 @@ import { Permission } from "@/types/admin";
 export function PublicVoicesPage() {
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const [filters, setFilters] = useState<PublicVoiceFilters>({});
+  const [filters, setFilters] = useState<PublicVoiceFilters>({ provider: "volcengine-speech" });
   const [editor, setEditor] = useState<PublicVoice | "new" | null>(null);
   const [form] = Form.useForm<PublicVoiceBody>();
   const list = usePagedList({
@@ -46,12 +46,19 @@ export function PublicVoicesPage() {
     },
     onError: (e: Error) => message.error(e.message),
   });
+  const sync = useMutation({
+    mutationFn: syncPublicVoices,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-public-voices"] });
+    },
+  });
   function openEditor(voice?: PublicVoice) {
     setEditor(voice ?? "new");
     form.resetFields();
     form.setFieldsValue(
       voice
         ? {
+            provider: voice.provider,
             name: voice.name,
             speaker_id: voice.speaker_id,
             description: voice.description,
@@ -62,6 +69,7 @@ export function PublicVoicesPage() {
             enabled: voice.status === "ready",
           }
         : {
+            provider: "volcengine-speech",
             name: "",
             speaker_id: "",
             description: "",
@@ -74,6 +82,7 @@ export function PublicVoicesPage() {
     );
   }
   const columns: TableColumnsType<PublicVoice> = [
+    { title: "供应商", dataIndex: "provider", width: 120, render: (v) => v === "minimax" ? "MiniMax 国际版" : "火山语音" },
     {
       title: "音色",
       dataIndex: "name",
@@ -162,16 +171,40 @@ export function PublicVoicesPage() {
           音色管理 · 公共音色
         </Typography.Title>
         <Can permission={Permission.MODELS_WRITE}>
-          <Button type="primary" onClick={() => openEditor()}>
-            新增公共音色
-          </Button>
+          <Space wrap>
+            <Button loading={sync.isPending} onClick={() => sync.mutate(filters.provider ?? "volcengine-speech")}>
+              同步官方音色与试听
+            </Button>
+            <Button type="primary" disabled={filters.provider === "minimax"} onClick={() => openEditor()}>
+              新增公共音色
+            </Button>
+          </Space>
         </Can>
       </Space>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        维护 Seed TTS 2.0 / Seed Audio
-        可用的公共音色和试听链接。停用后不再出现在用户可选音色中。
+        维护火山语音与 MiniMax 国际版可用的公共音色和试听链接。停用后不再出现在用户可选音色中。
       </Typography.Paragraph>
+      <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
+        同步当前选中的供应商：火山使用「火山引擎」的 AK/SK，MiniMax 使用国际版 API Key。仅补充新音色和缺失的试听，
+        保留已编辑内容及停用状态。MiniMax 官方查询不提供试听链接，可编辑补充公开素材；合成试听需要走文本转语音的预估与计费流程。这里播放已有音频。
+      </Typography.Paragraph>
+      {sync.isError && (
+        <Alert type="error" showIcon title="官方同步失败" description={sync.error.message} />
+      )}
+      {sync.isSuccess && (
+        <Alert
+          type={sync.data.missing_preview > 0 ? "warning" : "success"}
+          showIcon
+          title={`已核对 ${sync.data.total} 个官方音色，新增 ${sync.data.added} 个，补齐 ${sync.data.previews_filled} 个试听`}
+          description={
+            sync.data.missing_preview > 0
+              ? `仍有 ${sync.data.missing_preview} 个本地音色没有试听链接。官方暂未提供试听的音色，可在编辑中补充已有音频链接。`
+              : "公共音色试听链接已齐全。"
+          }
+        />
+      )}
       <Space wrap>
+        <Select aria-label="音色供应商" disabled={sync.isPending} value={filters.provider} style={{ width: 180 }} onChange={(provider) => { setFilters((f) => ({ ...f, provider })); sync.reset(); }} options={[{value: "volcengine-speech", label: "火山语音"}, {value: "minimax", label: "MiniMax 国际版"}]} />
         <Input.Search
           aria-label="搜索公共音色"
           placeholder="名称或供应商音色 ID"
@@ -236,6 +269,7 @@ export function PublicVoicesPage() {
             })
           }
         >
+          <Form.Item name="provider" hidden><Input /></Form.Item>
           <Form.Item
             name="name"
             label="音色名称"
@@ -246,19 +280,19 @@ export function PublicVoicesPage() {
           <Form.Item
             name="speaker_id"
             label="供应商音色 ID"
-            extra="使用供应商公开音色表中的 TTS 2.0 ID；复刻音色 S_ 名额请到复刻槽位管理。编辑时不可更换 ID。"
+            extra="火山支持手动配置官方 TTS 2.0 ID。MiniMax 通过官方同步导入；复刻音色不能配置为公共音色。编辑时不可更换 ID。"
             rules={[
               { required: true },
               {
-                pattern: /_uranus_bigtts$/,
-                message: "需使用以 _uranus_bigtts 结尾的公共音色 ID",
+                pattern: editor !== "new" && editor?.provider === "minimax" ? undefined : /^(?:[a-z]{2}_(?:female|male)_[A-Za-z0-9_-]+_uranus_bigtts|ICL_uranus_[a-z]{2}_(?:female|male)_[A-Za-z0-9_-]+_tob)$/,
+                message: "请填写官方 TTS 2.0 公共音色 ID（含 ICL_uranus 系列）",
               },
-              { max: 128 },
+              { max: 256 },
             ]}
           >
             <Input
               disabled={editor !== "new"}
-              maxLength={128}
+              maxLength={256}
               placeholder="zh_female_vv_uranus_bigtts"
             />
           </Form.Item>

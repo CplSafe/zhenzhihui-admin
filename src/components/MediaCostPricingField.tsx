@@ -16,7 +16,8 @@ export function MediaCostPricingField({ value }: { value: Pricing; onChange: (va
     ['provider_cost_cents_per_extra_input_image', '第 2 张起的参考图', '张'],
     ['provider_cost_cents_per_minute', '原始音频时长', '分钟'],
     ['provider_cost_cents_per_ten_thousand_characters', '朗读文本', '万字符'],
-  ] as const) { const cents = value[key]; if (typeof cents === 'number' && cents > 0) rows.push({ key, label, price: `¥${cents / 100} / ${unit}` }) }
+    ['provider_cost_cents_per_cloned_voice', '复刻音色首次使用', '音色'],
+  ] as const) { const cents = value[key]; if (typeof cents === 'number' && cents > 0) rows.push({ key, label, price: `${currency} ${cents / 100} / ${unit}` }) }
   return <div>
     <Alert type="info" showIcon title="按官方成本结算 · 1 积分 = ¥0.02" description="实际用量 × 官方单价，整笔向上取整到 0.001 积分。预估仅用于冻结；缺失计费用量时不会按固定积分兜底扣费。" style={{ marginBottom: 12 }} />
     <Table size="small" rowKey="key" pagination={false} dataSource={rows} columns={[{ title: '计费项', dataIndex: 'label' }, { title: '官方单价', dataIndex: 'price' }, { title: '折算积分', dataIndex: 'credits', render: (v: string | undefined) => v ?? '—' }]} />

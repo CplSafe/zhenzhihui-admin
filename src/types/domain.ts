@@ -342,6 +342,7 @@ export interface Pricing {
   provider_cost_cents_per_million_tokens?: number;
   provider_cost_cents_per_minute?: number;
   provider_cost_cents_per_ten_thousand_characters?: number;
+  provider_cost_cents_per_cloned_voice?: number;
   provider_cost_currency?: string;
   provider_cost_to_cny_ppm?: number;
   provider_cost_cents_per_million_tokens_with_video?: number;
