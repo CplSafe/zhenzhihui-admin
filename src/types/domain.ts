@@ -387,6 +387,7 @@ export interface TierTokenRate {
 // 复杂字段(pricing / params_schema / result_schema)结构因 provider 而异,
 // 统一以 unknown 透传,前端用 JSON 编辑器读写。
 export interface ModelVersion extends MutableEntity {
+  sort_order?: number;
   provider: string;
   model: string;
   version: string;

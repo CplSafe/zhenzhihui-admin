@@ -7,6 +7,7 @@ import {
   Drawer,
   Form,
   Input,
+  InputNumber,
   Select,
   Space,
   Switch,
@@ -15,6 +16,7 @@ import {
 import type { TableColumnsType, UploadProps } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ModelOrderButton } from "@/components/ModelOrderButton";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
 import { JsonField } from "@/components/JsonField";
@@ -131,7 +133,7 @@ export function ModelsPage() {
     }
     if (editId === 0) {
       form.resetFields();
-      form.setFieldsValue({ enabled: true, task_mode: "sync" });
+      form.setFieldsValue({ enabled: true, task_mode: "sync", sort_order: 0 });
       return;
     }
     if (editId && editId > 0 && detail.data) {
@@ -220,6 +222,7 @@ export function ModelsPage() {
   };
 
   const columns: TableColumnsType<ModelVersion> = [
+    { title: "序号", dataIndex: "sort_order", width: 80 },
     {
       title: "ID",
       dataIndex: "id",
@@ -325,9 +328,12 @@ export function ModelsPage() {
               />
             </Space>
             <Can permission={Permission.MODELS_WRITE}>
-              <Button type="primary" onClick={() => openDrawer(0)}>
-                新增模型
-              </Button>
+              <Space>
+                <ModelOrderButton onSaved={invalidate} />
+                <Button type="primary" onClick={() => openDrawer(0)}>
+                  新增模型
+                </Button>
+              </Space>
             </Can>
           </Space>
         }
@@ -417,6 +423,14 @@ export function ModelsPage() {
             rules={[{ required: !isEdit, message: "必填" }]}
           >
             <Input placeholder="seedance-2.0" />
+          </Form.Item>
+          <Form.Item
+            name="sort_order"
+            label="排序序号"
+            extra="数值越小越靠前；相同时按厂商、模型和版本排序。"
+            rules={[{ type: "integer", min: 0, max: 1000000 }]}
+          >
+            <InputNumber min={0} max={1000000} precision={0} />
           </Form.Item>
           <Form.Item name="display_name" label="展示名">
             <Input placeholder="Seedance 2.0" />

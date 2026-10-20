@@ -10,6 +10,7 @@ export interface ModelListParams {
 }
 
 export interface ModelWriteBody {
+  sort_order?: number;
   provider?: string;
   model?: string;
   version?: string;
@@ -71,3 +72,19 @@ export interface TestConnectionResult {
 // 测连通:用模型当前配置真实发一条 chat,返回回复 + token + 扣费预览(后端不计费、不入库)。
 export const testModelConnection = (id: number, body: TestConnectionBody) =>
   http.post<TestConnectionResult>(`/admin/models/${id}/test-connection`, body);
+
+export const reorderModels = (models: ModelVersion[], expected: ModelVersion[]) =>
+  http.post<void>("/admin/models/reorder", {
+    model_ids: models.map((m) => m.id),
+    expected: expected.map(({ id, sort_order }) => ({ id, sort_order })),
+  });
+
+export async function listAllModels(): Promise<ModelVersion[]> {
+  const models: ModelVersion[] = [];
+  for (;;) {
+    const page = await listModels({ limit: 100, offset: models.length });
+    models.push(...page.items);
+    if (models.length >= page.total) return models;
+    if (page.items.length === 0) throw new Error("模型列表已变更，请重新加载");
+  }
+}

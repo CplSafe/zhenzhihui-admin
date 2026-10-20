@@ -8,6 +8,7 @@ export function modelFormValues(d: ModelVersion): ModelWriteBody {
     model: d.model,
     version: d.version,
     display_name: d.display_name,
+    sort_order: d.sort_order ?? 0,
     logo_url: d.logo_url,
     capability: d.capability,
     enabled: d.enabled,
