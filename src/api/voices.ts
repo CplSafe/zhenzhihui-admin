@@ -46,7 +46,8 @@ export interface VoiceCatalogSyncResult {
 }
 export const syncPublicVoices = () =>
   http.post<VoiceCatalogSyncResult>("/admin/voices/public/sync?provider=minimax", undefined, {
-    timeout: 120_000,
+    // Allow the 3600s gateway timeout to return a response; backend deadline remains 120s.
+    timeout: 3_660_000,
   });
 export const listVoiceSlots = (workspaceID: number) =>
   http.get<VoiceSlot[] | null>(
