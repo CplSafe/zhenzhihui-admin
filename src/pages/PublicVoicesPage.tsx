@@ -29,8 +29,8 @@ import { Permission } from "@/types/admin";
 export function PublicVoicesPage() {
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const [filters, setFilters] = useState<PublicVoiceFilters>({ provider: "volcengine-speech" });
-  const [editor, setEditor] = useState<PublicVoice | "new" | null>(null);
+  const [filters, setFilters] = useState<PublicVoiceFilters>({ provider: "minimax" });
+  const [editor, setEditor] = useState<PublicVoice | null>(null);
   const [form] = Form.useForm<PublicVoiceBody>();
   const list = usePagedList({
     queryKey: "admin-public-voices",
@@ -52,44 +52,30 @@ export function PublicVoicesPage() {
       qc.invalidateQueries({ queryKey: ["admin-public-voices"] });
     },
   });
-  function openEditor(voice?: PublicVoice) {
-    setEditor(voice ?? "new");
+  function openEditor(voice: PublicVoice) {
+    setEditor(voice);
     form.resetFields();
-    form.setFieldsValue(
-      voice
-        ? {
-            provider: voice.provider,
-            name: voice.name,
-            speaker_id: voice.speaker_id,
-            description: voice.description,
-            language: voice.language,
-            gender: voice.gender,
-            tags: voice.tags ?? [],
-            preview_url: voice.preview_url ?? "",
-            enabled: voice.status === "ready",
-          }
-        : {
-            provider: "volcengine-speech",
-            name: "",
-            speaker_id: "",
-            description: "",
-            language: "zh",
-            gender: "",
-            tags: [],
-            preview_url: "",
-            enabled: true,
-          },
-    );
+    form.setFieldsValue({
+      provider: "minimax",
+      name: voice.name,
+      speaker_id: voice.speaker_id,
+      description: voice.description,
+      language: voice.language,
+      gender: voice.gender,
+      tags: voice.tags ?? [],
+      preview_url: voice.preview_url ?? "",
+      enabled: voice.status === "ready",
+    });
   }
   const columns: TableColumnsType<PublicVoice> = [
-    { title: "供应商", dataIndex: "provider", width: 120, render: (v) => v === "minimax" ? "MiniMax 国际版" : "火山语音" },
+    { title: "供应商", dataIndex: "provider", width: 120, render: () => "MiniMax" },
     {
       title: "音色",
       dataIndex: "name",
       width: 180,
       render: (name, row) => (
         <>
-          <Typography.Text strong>{name}</Typography.Text>
+          <Typography.Text strong>{row.display_name || name}</Typography.Text>
           <div>
             <Typography.Text type="secondary">
               #{row.id} · {row.language || "未标注语种"}
@@ -114,7 +100,7 @@ export function PublicVoicesPage() {
       width: 240,
       render: (_, row) => (
         <>
-          <div>{row.description || "—"}</div>
+          <div>{row.display_description || row.description || "—"}</div>
           <Space size={[0, 4]} wrap>
             {(row.tags ?? []).map((tag) => (
               <Tag key={tag}>{tag}</Tag>
@@ -140,7 +126,7 @@ export function PublicVoicesPage() {
       render: (_, row) =>
         row.preview_url ? (
           <audio
-            aria-label={`${row.name}试听`}
+            aria-label={`${row.display_name || row.name}试听`}
             controls
             preload="none"
             src={row.preview_url}
@@ -172,21 +158,27 @@ export function PublicVoicesPage() {
         </Typography.Title>
         <Can permission={Permission.MODELS_WRITE}>
           <Space wrap>
-            <Button loading={sync.isPending} onClick={() => sync.mutate(filters.provider ?? "volcengine-speech")}>
-              同步官方音色与试听
-            </Button>
-            <Button type="primary" disabled={filters.provider === "minimax"} onClick={() => openEditor()}>
-              新增公共音色
+            <Typography.Text>音色供应商</Typography.Text>
+            <Select
+              aria-label="音色供应商"
+              value="minimax"
+              disabled={sync.isPending}
+              style={{ width: 160 }}
+              options={[{ value: "minimax", label: "MiniMax" }]}
+            />
+            <Button type="primary" loading={sync.isPending} onClick={() => sync.mutate()}>
+              同步 MiniMax 音色与试听
             </Button>
           </Space>
         </Can>
       </Space>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        维护火山语音与 MiniMax 国际版可用的公共音色和试听链接。停用后不再出现在用户可选音色中。
+        维护 MiniMax 公共音色和试听链接。停用后不再出现在用户可选音色中。
       </Typography.Paragraph>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        同步当前选中的供应商：火山使用「火山引擎」的 AK/SK，MiniMax 使用国际版 API Key。仅补充新音色和缺失的试听，
-        保留已编辑内容及停用状态。MiniMax 官方查询不提供试听链接，可编辑补充公开素材；合成试听需要走文本转语音的预估与计费流程。这里播放已有音频。
+        MiniMax 使用国际版 API Key 核对系统音色，
+        并同步官网的标题、描述、封面、试听链接和筛选标签（国内官网优先，国际官网补缺）。同步保留人工编辑内容、停用状态及自定义试听，
+        并更新此前同步的官网试听链接。未匹配到官网资料的音色保留原数据，可编辑补充已有音频链接。同步和播放已有试听不会调用付费语音合成。
       </Typography.Paragraph>
       {sync.isError && (
         <Alert type="error" showIcon title="官方同步失败" description={sync.error.message} />
@@ -204,7 +196,6 @@ export function PublicVoicesPage() {
         />
       )}
       <Space wrap>
-        <Select aria-label="音色供应商" disabled={sync.isPending} value={filters.provider} style={{ width: 180 }} onChange={(provider) => { setFilters((f) => ({ ...f, provider })); sync.reset(); }} options={[{value: "volcengine-speech", label: "火山语音"}, {value: "minimax", label: "MiniMax 国际版"}]} />
         <Input.Search
           aria-label="搜索公共音色"
           placeholder="名称或供应商音色 ID"
@@ -247,7 +238,7 @@ export function PublicVoicesPage() {
         />
       </Card>
       <Modal
-        title={editor === "new" ? "新增公共音色" : "编辑公共音色"}
+        title="编辑 MiniMax 公共音色"
         open={editor !== null}
         onCancel={() => !save.isPending && setEditor(null)}
         onOk={() => form.submit()}
@@ -280,20 +271,16 @@ export function PublicVoicesPage() {
           <Form.Item
             name="speaker_id"
             label="供应商音色 ID"
-            extra="火山支持手动配置官方 TTS 2.0 ID。MiniMax 通过官方同步导入；复刻音色不能配置为公共音色。编辑时不可更换 ID。"
+            extra="MiniMax 公共音色通过官方同步导入；复刻音色不能配置为公共音色。音色 ID 不可修改。"
             rules={[
               { required: true },
-              {
-                pattern: editor !== "new" && editor?.provider === "minimax" ? undefined : /^(?:[a-z]{2}_(?:female|male)_[A-Za-z0-9_-]+_uranus_bigtts|ICL_uranus_[a-z]{2}_(?:female|male)_[A-Za-z0-9_-]+_tob)$/,
-                message: "请填写官方 TTS 2.0 公共音色 ID（含 ICL_uranus 系列）",
-              },
               { max: 256 },
             ]}
           >
             <Input
-              disabled={editor !== "new"}
+              disabled
               maxLength={256}
-              placeholder="zh_female_vv_uranus_bigtts"
+              placeholder="MiniMax 系统音色 ID"
             />
           </Form.Item>
           <Space align="start" wrap>

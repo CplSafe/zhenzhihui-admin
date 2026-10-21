@@ -15,6 +15,8 @@ export interface PublicVoiceBody {
 
 export interface PublicVoice extends Omit<PublicVoiceBody, "enabled"> {
   id: number;
+  display_name?: string;
+  display_description?: string;
   status: "ready" | "disabled";
 }
 
@@ -42,8 +44,8 @@ export interface VoiceCatalogSyncResult {
   previews_filled: number;
   missing_preview: number;
 }
-export const syncPublicVoices = (provider: string) =>
-  http.post<VoiceCatalogSyncResult>(`/admin/voices/public/sync${qs({ provider })}`, undefined, {
+export const syncPublicVoices = () =>
+  http.post<VoiceCatalogSyncResult>("/admin/voices/public/sync?provider=minimax", undefined, {
     timeout: 120_000,
   });
 export const listVoiceSlots = (workspaceID: number) =>
