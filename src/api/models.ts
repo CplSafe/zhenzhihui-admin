@@ -21,6 +21,7 @@ export interface ModelWriteBody {
   task_mode?: string;
   allowed_plans?: string[];
   operation_codes?: string[];
+  ability_codes?: string[];
   params_schema?: unknown;
   pricing?: unknown;
   result_schema?: unknown;

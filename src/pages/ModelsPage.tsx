@@ -16,6 +16,9 @@ import {
 import type { TableColumnsType, UploadProps } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { abilitySupportsModel } from "@/utils/businessAbilities";
+import { listAbilities } from "@/api/abilities";
+import { ModelAbilitiesField } from "@/components/ModelAbilitiesField";
 import { ModelOrderButton } from "@/components/ModelOrderButton";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
@@ -88,9 +91,16 @@ export function ModelsPage() {
   const [form] = Form.useForm<ModelWriteBody>();
   // system_prompts 的 opcode 下拉来源:跟随表单里已填的 operation_codes。
   const watchedOps = Form.useWatch("operation_codes", form);
+  const abilities = useQuery({
+    queryKey: ["admin", "abilities"],
+    queryFn: listAbilities,
+    enabled: editId !== null,
+  });
   const watchedCapability = Form.useWatch("capability", form);
   const watchedProvider = Form.useWatch("provider", form);
   const watchedVersion = Form.useWatch("version", form);
+  const watchedModel = Form.useWatch("model", form);
+  const execution = { provider: watchedProvider ?? "", model: watchedModel ?? "", version: watchedVersion ?? "", capability: watchedCapability ?? "", operation_codes: watchedOps ?? [] };
   const [uploadingLogo, setUploadingLogo] = useState(false);
   // 各 JSON 字段合法性;任一非法则禁用保存,避免非法 JSON 静默存旧值(见 JsonField)。
   const [jsonValid, setJsonValid] = useState<Record<string, boolean>>({});
@@ -133,7 +143,7 @@ export function ModelsPage() {
     }
     if (editId === 0) {
       form.resetFields();
-      form.setFieldsValue({ enabled: true, task_mode: "sync", sort_order: 0 });
+      form.setFieldsValue({ enabled: true, task_mode: "sync", sort_order: 0, ability_codes: [] });
       return;
     }
     if (editId && editId > 0 && detail.data) {
@@ -143,6 +153,7 @@ export function ModelsPage() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-models-list"] });
+    qc.invalidateQueries({ queryKey: ["admin", "models", "all"] });
     refetch();
   };
 
@@ -372,7 +383,7 @@ export function ModelsPage() {
             <Button
               type="primary"
               loading={saveMut.isPending}
-              disabled={!allJsonValid}
+              disabled={!allJsonValid || abilities.isPending || abilities.isError || detail.isError || ((isEdit || isCopy) && detail.isFetching)}
               onClick={() => form.submit()}
             >
               保存
@@ -380,6 +391,8 @@ export function ModelsPage() {
           </Space>
         }
       >
+        {detail.isError && <Alert type="error" showIcon title="模型详情加载失败" description={detail.error.message}
+          action={<Button onClick={() => detail.refetch()}>重试</Button>} style={{ marginBottom: 16 }} />}
         {probe && (
           <Alert
             type="success"
@@ -484,6 +497,27 @@ export function ModelsPage() {
               mode="tags"
               placeholder="如 video.text_to_video / video.image_to_video"
             />
+          </Form.Item>
+          {abilities.isError && (
+            <Alert type="error" showIcon title="业务能力加载失败" description={abilities.error.message}
+              action={<Button onClick={() => abilities.refetch()}>重试</Button>} style={{ marginBottom: 16 }} />
+          )}
+          <Form.Item
+            name="ability_codes"
+            label="业务能力"
+            extra="仅展示匹配操作码的已启用能力；已分配的停用能力会保留。默认模型须先在业务能力页面清除默认才能取消。"
+            dependencies={["operation_codes", "provider", "model", "version", "capability"]}
+            rules={[{
+              validator: (_, codes: string[] | undefined) => {
+                const incompatible = abilities.data?.find(ability => codes?.includes(ability.code)
+                  && !abilitySupportsModel(ability, execution));
+                return incompatible
+                  ? Promise.reject(new Error(`${incompatible.display_name} 需要兼容的模型与操作码 ${incompatible.operation_code}，请调整模型配置或取消该能力`))
+                  : Promise.resolve();
+              },
+            }]}
+          >
+            <ModelAbilitiesField abilities={abilities.data ?? []} assigned={detail.data?.ability_codes ?? []} model={execution} modelId={isEdit ? editId : 0} />
           </Form.Item>
           <Form.Item
             name="pricing"

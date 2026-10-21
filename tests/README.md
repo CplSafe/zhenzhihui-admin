@@ -14,3 +14,18 @@ errors in `WorkspacesPage.tsx` (lines 83 and 105); the pricing files pass lint.
 Google Standard rates mirror backend `internal/catalog/google_images.go`.
 Cost previews are image-output-only examples, not task preauthorization quotes.
 Production still requires deployment and an explicit model configuration save.
+
+## Business ability browser checks
+
+Start a local server with `pnpm dev`, then open an isolated browser session:
+
+```sh
+npx --yes --package @playwright/cli playwright-cli --session abilities open http://127.0.0.1:5273/login
+pnpm test:abilities:browser
+```
+
+The script mocks every `/api/v1/` endpoint. It verifies second-page default
+model candidates, immutable bindings, tool creation payloads, disabled assigned
+abilities, explicit `ability_codes: []`, default-detach protection, read-only
+permissions, UTF-8 validation, enable/disable, error retry and responsive layout. Screenshots go to `output/playwright/`.
+No real configuration or model execution requests are made.

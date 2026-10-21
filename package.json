@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:abilities:browser": "npx --yes --package @playwright/cli playwright-cli --session abilities run-code --filename tests/abilities.browser.js",
     "preview": "vite preview"
   },
   "dependencies": {

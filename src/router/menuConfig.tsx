@@ -112,6 +112,13 @@ export const menuConfig: MenuItemConfig[] = [
     icon: <ApiOutlined />,
     permission: Permission.MODELS_READ,
   },
+  {
+    key: "abilities",
+    path: "/abilities",
+    label: "业务能力",
+    icon: <ApiOutlined />,
+    permission: Permission.MODELS_READ,
+  },
   { key: "voices", path: "/voices", label: "公共音色", icon: <SoundOutlined />, permission: Permission.MODELS_READ },
   { key: "voice-slots", path: "/voice-slots", label: "复刻槽位", icon: <SoundOutlined />, permission: Permission.SETTINGS_READ },
   {
