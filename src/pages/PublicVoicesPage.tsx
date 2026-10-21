@@ -185,8 +185,9 @@ export function PublicVoicesPage() {
         维护火山语音与 MiniMax 国际版可用的公共音色和试听链接。停用后不再出现在用户可选音色中。
       </Typography.Paragraph>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        同步当前选中的供应商：火山使用「火山引擎」的 AK/SK，MiniMax 使用国际版 API Key。仅补充新音色和缺失的试听，
-        保留已编辑内容及停用状态。MiniMax 官方查询不提供试听链接，可编辑补充公开素材；合成试听需要走文本转语音的预估与计费流程。这里播放已有音频。
+        同步当前选中的供应商：火山使用「火山引擎」的 AK/SK；MiniMax 使用国际版 API Key 核对系统音色，
+        并同步官网的标题、描述、封面、试听链接和筛选标签（国内官网优先，国际官网补缺）。同步保留人工编辑内容、停用状态及自定义试听，
+        并更新此前同步的官网试听链接。未匹配到官网资料的音色保留原数据，可编辑补充已有音频链接。同步和播放已有试听不会调用付费语音合成。
       </Typography.Paragraph>
       {sync.isError && (
         <Alert type="error" showIcon title="官方同步失败" description={sync.error.message} />
