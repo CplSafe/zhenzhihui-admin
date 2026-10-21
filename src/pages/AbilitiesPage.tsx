@@ -66,14 +66,14 @@ const bindings = [
   ...DIRECT_OPERATIONS.map((operation_code) => ({
     value: operation_code,
     label: `${operation_code}（直接执行）`,
-    operation_code,
+    execution_operation_code: operation_code,
     tool_code: "",
     tool_version: 0,
   })),
   ...TOOL_BINDINGS.map(([tool_code, tool_version, name]) => ({
     value: `${tool_code}:v${tool_version}`,
     label: `${name} · ${tool_code} v${tool_version}`,
-    operation_code: "image.image_to_image",
+    execution_operation_code: "image.image_to_image",
     tool_code,
     tool_version,
   })),
@@ -85,6 +85,7 @@ interface AbilityForm {
   description: string;
   enabled: boolean;
   binding: string;
+  operation_code: string;
   default_model_version_id: number;
 }
 
@@ -94,10 +95,12 @@ type SaveInput =
 
 function AbilityEditor({
   ability,
+  abilities,
   saving,
   onSave,
 }: {
   ability: BusinessAbility | null;
+  abilities: BusinessAbility[];
   saving: boolean;
   onSave: (input: SaveInput) => void;
 }) {
@@ -110,21 +113,47 @@ function AbilityEditor({
   });
   const binding = ability?.tool_code
     ? `${ability.tool_code}:v${ability.tool_version}`
-    : ability?.operation_code;
-  const candidates = ability
-    ? abilityModelOptions(ability, models.data ?? [])
+    : ability?.execution_operation_code || ability?.operation_code;
+  const watchedBinding = Form.useWatch("binding", form);
+  const watchedOperation = Form.useWatch("operation_code", form);
+  const watchedDefault = Form.useWatch("default_model_version_id", form);
+  const selectedDefault =
+    watchedDefault ?? ability?.default_model_version_id ?? 0;
+  const selectedBinding = bindings.find(
+    (option) => option.value === (watchedBinding ?? binding),
+  );
+  const pendingAbility =
+    ability && selectedBinding
+      ? {
+          ...ability,
+          operation_code: (watchedOperation ?? ability.operation_code).trim(),
+          execution_operation_code: selectedBinding.execution_operation_code,
+          tool_code: selectedBinding.tool_code,
+          tool_version: selectedBinding.tool_version,
+        }
+      : null;
+  const pendingDefinitions = pendingAbility
+    ? abilities.map((definition) =>
+        definition.code === pendingAbility.code ? pendingAbility : definition,
+      )
+    : abilities;
+  const candidates = pendingAbility
+    ? abilityModelOptions(
+        pendingAbility,
+        models.data ?? [],
+        pendingDefinitions,
+        ability?.operation_code,
+      )
     : [];
   // Keep a stale/disabled current default visible and clearable instead of showing
   // an unlabeled numeric ID or silently overwriting it during unrelated edits.
   if (
-    ability?.default_model_version_id &&
-    !candidates.some(
-      (option) => option.value === ability.default_model_version_id,
-    )
+    selectedDefault &&
+    !candidates.some((option) => option.value === selectedDefault)
   ) {
     candidates.push({
-      value: ability.default_model_version_id,
-      label: `#${ability.default_model_version_id}（当前默认，已不可用，请重新选择或清除）`,
+      value: selectedDefault,
+      label: `#${selectedDefault}（当前默认，已不可用，请重新选择或清除）`,
       disabled: true,
     });
   }
@@ -139,10 +168,19 @@ function AbilityEditor({
         description: ability?.description ?? "",
         enabled: ability?.enabled ?? true,
         binding,
+        operation_code: ability?.operation_code ?? "",
         default_model_version_id: ability?.default_model_version_id ?? 0,
       }}
       onFinish={(values) => {
+        const selected = bindings.find(
+          (option) => option.value === values.binding,
+        );
+        if (!selected) return;
         const editable = {
+          operation_code: values.operation_code.trim(),
+          execution_operation_code: selected.execution_operation_code,
+          tool_code: selected.tool_code,
+          tool_version: selected.tool_version,
           display_name: values.display_name.trim(),
           description: values.description.trim(),
           enabled: values.enabled,
@@ -155,33 +193,26 @@ function AbilityEditor({
             body.default_model_version_id = values.default_model_version_id;
           onSave({ code: ability.code, body });
         } else {
-          const selected = bindings.find(
-            (option) => option.value === values.binding,
-          );
-          if (selected)
-            onSave({
-              code: null,
-              body: {
-                ...editable,
-                code: values.code.trim(),
-                operation_code: selected.operation_code,
-                tool_code: selected.tool_code,
-                tool_version: selected.tool_version,
-                default_model_version_id: 0,
-              },
-            });
+          onSave({
+            code: null,
+            body: {
+              ...editable,
+              code: values.code.trim(),
+              default_model_version_id: 0,
+            },
+          });
         }
       }}
     >
       <Alert
         type="info"
         showIcon
-        title="能力代码与执行绑定创建后不可修改"
+        title="业务操作码与技术执行绑定可分别编辑"
         style={{ marginBottom: 20 }}
         description={
           <>
-            先创建能力，再到<Link to="/models">模型配置</Link>
-            勾选可使用的模型，最后回到这里设置默认模型。
+            业务操作码是前端查询与调用时使用的唯一标识，可自由命名。修改后请同步调用方；后端会自动更新模型中声明的旧操作码，技术执行绑定保持原选择。修改技术绑定时，所有已分配模型与默认模型都必须兼容。模型分配可在
+            <Link to="/models">模型配置</Link>中调整。
           </>
         }
       />
@@ -235,12 +266,28 @@ function AbilityEditor({
         <Input.TextArea rows={3} maxLength={2000} showCount />
       </Form.Item>
       <Form.Item
+        name="operation_code"
+        label="业务操作码 (operation_code)"
+        extra="任意唯一名称，去除首尾空白后不可为空，最多 128 字节；无需使用 image 等前缀。"
+        rules={[
+          { required: true, whitespace: true, message: "请输入业务操作码" },
+          {
+            validator: (_, value: string) =>
+              fitsAbilityTextLimit("operation", value)
+                ? Promise.resolve()
+                : Promise.reject(new Error("业务操作码最多 128 字节")),
+          },
+        ]}
+      >
+        <Input maxLength={128} placeholder="如 brand/lighting 或 图片打光" />
+      </Form.Item>
+      <Form.Item
         name="binding"
-        label="执行绑定"
+        label="技术执行绑定"
         rules={[{ required: true, message: "请选择已实现的操作或工具" }]}
       >
         <Select
-          disabled={!!ability || saving}
+          disabled={saving}
           showSearch
           optionFilterProp="label"
           options={bindings}
@@ -263,7 +310,7 @@ function AbilityEditor({
       <Form.Item
         name="default_model_version_id"
         label="默认模型"
-        extra="仅可选择已分配该能力且支持执行操作的模型；此处会读取全部模型分页。停用能力不会自动启用模型。"
+        extra="按当前业务操作码与技术执行绑定筛选已分配模型，并读取全部分页。修改绑定后不兼容的原默认会保留，需明确清除或重选；停用模型会标注状态。"
       >
         <Select
           loading={!!ability && models.isFetching}
@@ -298,8 +345,12 @@ export function AbilitiesPage() {
     queryKey: ["admin", "abilities"],
     queryFn: listAbilities,
   });
-  const invalidate = () =>
+  const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin", "abilities"] });
+    qc.invalidateQueries({ queryKey: ["admin-models-list"] });
+    qc.invalidateQueries({ queryKey: ["admin", "model"] });
+    qc.invalidateQueries({ queryKey: ["admin", "models", "all"] });
+  };
   const onError = (error: Error) => message.error(error.message || "操作失败");
   const save = useMutation({
     mutationFn: (input: SaveInput) =>
@@ -343,8 +394,13 @@ export function AbilitiesPage() {
       ),
     },
     {
-      title: "执行操作",
+      title: "业务操作码",
       dataIndex: "operation_code",
+      render: (value) => <Mono>{value}</Mono>,
+    },
+    {
+      title: "技术执行操作",
+      dataIndex: "execution_operation_code",
       render: (value) => <Mono>{value}</Mono>,
     },
     {
@@ -401,7 +457,7 @@ export function AbilitiesPage() {
   const visible = (abilities.data ?? []).filter(
     (ability) =>
       (status === undefined || status === ability.enabled) &&
-      `${ability.code} ${ability.display_name} ${ability.description}`
+      `${ability.code} ${ability.operation_code} ${ability.display_name} ${ability.description}`
         .toLowerCase()
         .includes(keyword.toLowerCase()),
   );
@@ -480,6 +536,7 @@ export function AbilitiesPage() {
           <AbilityEditor
             key={editing?.code ?? "create"}
             ability={editing}
+            abilities={abilities.data ?? []}
             saving={save.isPending}
             onSave={(input) => save.mutate(input)}
           />

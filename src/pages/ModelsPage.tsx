@@ -495,7 +495,8 @@ export function ModelsPage() {
           <Form.Item name="operation_codes" label="操作码 (operation_codes)">
             <Select
               mode="tags"
-              placeholder="如 video.text_to_video / video.image_to_video"
+              placeholder="选择已配置业务操作码，或回车输入操作码"
+              options={abilities.data?.map(ability => ({ value: ability.operation_code, label: `${ability.display_name} · ${ability.operation_code}${ability.enabled ? "" : "（已停用）"}` }))}
             />
           </Form.Item>
           {abilities.isError && (
@@ -510,7 +511,7 @@ export function ModelsPage() {
             rules={[{
               validator: (_, codes: string[] | undefined) => {
                 const incompatible = abilities.data?.find(ability => codes?.includes(ability.code)
-                  && !abilitySupportsModel(ability, execution));
+                  && !abilitySupportsModel(ability, execution, abilities.data));
                 return incompatible
                   ? Promise.reject(new Error(`${incompatible.display_name} 需要兼容的模型与操作码 ${incompatible.operation_code}，请调整模型配置或取消该能力`))
                   : Promise.resolve();

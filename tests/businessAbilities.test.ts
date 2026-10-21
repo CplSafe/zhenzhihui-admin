@@ -13,7 +13,8 @@ const relight: BusinessAbility = {
   display_name: "打光",
   description: "",
   enabled: true,
-  operation_code: "image.image_to_image",
+  operation_code: "image.relight",
+  execution_operation_code: "image.image_to_image",
   tool_code: "image.relight",
   tool_version: 1,
   default_model_version_id: 7,
@@ -61,7 +62,12 @@ test("model checkboxes preserve disabled assignments and exclude new disabled or
       relight,
       edit,
       { ...edit, code: "unassigned_disabled" },
-      { ...relight, code: "video", operation_code: "video.generate" },
+      {
+        ...relight,
+        code: "video",
+        operation_code: "video.generate",
+        execution_operation_code: "video.generate",
+      },
     ],
     model,
     ["image_edit", "old_missing"],
@@ -153,4 +159,106 @@ test("ability text validates UTF-8 byte limits rather than character counts", ()
   assert.equal(fitsAbilityTextLimit("description", "光".repeat(1366)), false);
   assert.equal(fitsAbilityTextLimit("description", "a".repeat(4096)), true);
   assert.equal(fitsAbilityTextLimit("description", "a".repeat(4097)), false);
+});
+
+test("arbitrary public operation strings use the execution capability and explicit declarations", () => {
+  const custom = { ...relight, operation_code: "品牌 灯光/编辑:v3" };
+  assert.equal(
+    abilitySupportsModel(custom, {
+      ...model,
+      operation_codes: [custom.operation_code],
+    }),
+    true,
+  );
+  assert.equal(
+    abilitySupportsModel(custom, model),
+    true,
+    "native execution declarations remain compatible",
+  );
+  assert.equal(
+    abilitySupportsModel(custom, { ...model, operation_codes: ["unknown"] }),
+    false,
+  );
+  assert.equal(
+    abilitySupportsModel(custom, {
+      ...model,
+      operation_codes: [custom.operation_code],
+      capability: "responses",
+    }),
+    false,
+  );
+});
+
+test("registered aliases require exactly the same execution and tool template", () => {
+  const custom = { ...relight, operation_code: "business/custom" };
+  const alias = {
+    ...relight,
+    code: "other",
+    operation_code: "alias/current",
+    enabled: false,
+  };
+  const declared = { ...model, operation_codes: [alias.operation_code] };
+  assert.equal(abilitySupportsModel(custom, declared, [custom, alias]), true);
+  assert.equal(
+    abilitySupportsModel(custom, declared, [
+      custom,
+      { ...alias, tool_version: 2 },
+    ]),
+    false,
+  );
+  assert.equal(
+    abilitySupportsModel(custom, declared, [
+      custom,
+      { ...alias, tool_code: "" },
+    ]),
+    false,
+  );
+  assert.equal(
+    abilitySupportsModel(custom, declared, [
+      custom,
+      { ...alias, execution_operation_code: "image.text_to_image" },
+    ]),
+    false,
+  );
+  assert.deepEqual(
+    abilityModelOptions(custom, [declared], [custom, alias]).map(
+      (o) => o.value,
+    ),
+    [7],
+  );
+});
+
+test("default preview remaps an edited public operation without losing assigned models", () => {
+  const pending = { ...relight, operation_code: "brand/renamed" };
+  const declared = { ...model, operation_codes: [relight.operation_code] };
+  assert.deepEqual(
+    abilityModelOptions(
+      pending,
+      [declared],
+      [pending],
+      relight.operation_code,
+    ).map((o) => o.value),
+    [7],
+  );
+  assert.deepEqual(
+    abilityModelOptions(
+      {
+        ...pending,
+        execution_operation_code: "video.generate",
+        tool_code: "",
+        tool_version: 0,
+      },
+      [declared],
+      [],
+      relight.operation_code,
+    ),
+    [],
+  );
+});
+
+test("public operation byte limit permits arbitrary names without an image prefix", () => {
+  assert.equal(fitsAbilityTextLimit("operation", "品牌 灯光/编辑:v3"), true);
+  assert.equal(fitsAbilityTextLimit("operation", "a".repeat(128)), true);
+  assert.equal(fitsAbilityTextLimit("operation", "a".repeat(129)), false);
+  assert.equal(fitsAbilityTextLimit("operation", "光".repeat(43)), false);
 });

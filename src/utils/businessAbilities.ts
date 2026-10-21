@@ -9,9 +9,24 @@ export type ModelExecution = Pick<
 export function abilitySupportsModel(
   ability: BusinessAbility,
   model: ModelExecution,
+  abilities: BusinessAbility[] = [],
 ): boolean {
-  if (!model.operation_codes?.includes(ability.operation_code)) return false;
-  const prefix = ability.operation_code.split(".")[0];
+  const execution = ability.execution_operation_code || ability.operation_code;
+  const declared = model.operation_codes?.some((operation) => {
+    if (operation === ability.operation_code || operation === execution)
+      return true;
+    const other = abilities.find(
+      (candidate) => candidate.operation_code === operation,
+    );
+    return (
+      other &&
+      (other.execution_operation_code || other.operation_code) === execution &&
+      other.tool_code === ability.tool_code &&
+      other.tool_version === ability.tool_version
+    );
+  });
+  if (!declared) return false;
+  const prefix = execution.split(".")[0];
   const capability = ["image", "video", "audio"].includes(prefix)
     ? prefix
     : "responses";
@@ -53,12 +68,26 @@ export function abilitySupportsModel(
 export function abilityModelOptions(
   ability: BusinessAbility,
   models: ModelVersion[],
+  abilities: BusinessAbility[] = [],
+  previousOperationCode?: string,
 ) {
   return models
+    .map((model) =>
+      previousOperationCode && previousOperationCode !== ability.operation_code
+        ? {
+            ...model,
+            operation_codes: model.operation_codes?.map((operation) =>
+              operation === previousOperationCode
+                ? ability.operation_code
+                : operation,
+            ),
+          }
+        : model,
+    )
     .filter(
       (model) =>
         model.ability_codes?.includes(ability.code) &&
-        abilitySupportsModel(ability, model),
+        abilitySupportsModel(ability, model, abilities),
     )
     .map((model) => ({
       value: model.id,
@@ -79,11 +108,11 @@ export function modelAbilityOptions(
     .filter(
       (ability) =>
         assigned.includes(ability.code) ||
-        (ability.enabled && abilitySupportsModel(ability, model)),
+        (ability.enabled && abilitySupportsModel(ability, model, abilities)),
     )
     .map((ability) => ({
       value: ability.code,
-      label: `${ability.display_name} (${ability.code})${ability.enabled ? "" : " · 已停用"}${abilitySupportsModel(ability, model) ? "" : " · 模型或操作不匹配"}${modelId > 0 && ability.default_model_version_id === modelId ? " · 当前默认模型，请先清除默认再取消" : ""}`,
+      label: `${ability.display_name} (${ability.code})${ability.enabled ? "" : " · 已停用"}${abilitySupportsModel(ability, model, abilities) ? "" : " · 模型或操作不匹配"}${modelId > 0 && ability.default_model_version_id === modelId ? " · 当前默认模型，请先清除默认再取消" : ""}`,
       disabled: modelId > 0 && ability.default_model_version_id === modelId,
     }));
   for (const code of assigned) {
@@ -99,11 +128,11 @@ export function modelAbilityOptions(
 }
 
 export function fitsAbilityTextLimit(
-  field: "name" | "description",
+  field: "name" | "description" | "operation",
   value: string | undefined,
 ): boolean {
   return (
     new TextEncoder().encode(value?.trim() ?? "").length <=
-    (field === "name" ? 128 : 4096)
+    (field === "description" ? 4096 : 128)
   );
 }

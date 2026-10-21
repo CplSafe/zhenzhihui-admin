@@ -516,13 +516,14 @@ export interface AgentStats {
   total_artifacts: number;
 }
 
-// Business-facing capability catalog; execution bindings are immutable.
+// Business-facing capability catalog; code is stable, public operation and binding are editable.
 export interface BusinessAbility {
   code: string;
   display_name: string;
   description: string;
   enabled: boolean;
   operation_code: string;
+  execution_operation_code: string;
   tool_code: string;
   tool_version: number;
   default_model_version_id: number;

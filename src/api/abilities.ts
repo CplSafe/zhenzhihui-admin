@@ -7,16 +7,24 @@ export interface AbilityCreateBody {
   description: string;
   enabled: boolean;
   operation_code: string;
+  execution_operation_code: string;
   tool_code: string;
   tool_version: number;
   default_model_version_id: number;
 }
 
-// Code and execution binding are immutable after creation.
+// Only the stable ability identity is immutable after creation.
 export type AbilityPatchBody = Partial<
   Pick<
     AbilityCreateBody,
-    "display_name" | "description" | "enabled" | "default_model_version_id"
+    | "display_name"
+    | "description"
+    | "enabled"
+    | "default_model_version_id"
+    | "operation_code"
+    | "execution_operation_code"
+    | "tool_code"
+    | "tool_version"
   >
 >;
 
