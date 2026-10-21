@@ -89,7 +89,7 @@ export function PublicVoicesPage() {
       width: 180,
       render: (name, row) => (
         <>
-          <Typography.Text strong>{name}</Typography.Text>
+          <Typography.Text strong>{row.display_name || name}</Typography.Text>
           <div>
             <Typography.Text type="secondary">
               #{row.id} · {row.language || "未标注语种"}
@@ -114,7 +114,7 @@ export function PublicVoicesPage() {
       width: 240,
       render: (_, row) => (
         <>
-          <div>{row.description || "—"}</div>
+          <div>{row.display_description || row.description || "—"}</div>
           <Space size={[0, 4]} wrap>
             {(row.tags ?? []).map((tag) => (
               <Tag key={tag}>{tag}</Tag>
@@ -140,7 +140,7 @@ export function PublicVoicesPage() {
       render: (_, row) =>
         row.preview_url ? (
           <audio
-            aria-label={`${row.name}试听`}
+            aria-label={`${row.display_name || row.name}试听`}
             controls
             preload="none"
             src={row.preview_url}

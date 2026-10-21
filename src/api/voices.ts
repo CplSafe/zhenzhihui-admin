@@ -15,6 +15,8 @@ export interface PublicVoiceBody {
 
 export interface PublicVoice extends Omit<PublicVoiceBody, "enabled"> {
   id: number;
+  display_name?: string;
+  display_description?: string;
   status: "ready" | "disabled";
 }
 
