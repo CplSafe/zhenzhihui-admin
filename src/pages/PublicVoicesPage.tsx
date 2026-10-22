@@ -177,7 +177,7 @@ export function PublicVoicesPage() {
       </Typography.Paragraph>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
         MiniMax 使用国际版 API Key 核对系统音色，
-        并仅从国内官网同步标题、描述、封面、试听链接和筛选标签，不回退国际官网英文资料。同步保留人工编辑内容、停用状态及自定义试听，
+        并仅从国际官网同步标题、描述、封面、试听链接和筛选标签，不读取国内官网资料。同步保留人工编辑内容、停用状态及自定义试听，
         并更新此前同步的官网试听链接。未匹配到官网资料的音色保留原数据，可编辑补充已有音频链接。同步和播放已有试听不会调用付费语音合成。
       </Typography.Paragraph>
       {sync.isError && (
