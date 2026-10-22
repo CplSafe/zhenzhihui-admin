@@ -24,3 +24,10 @@ test("renaming an operation preserves unsaved choices and native execution decla
  const after = [{code:"edit", operation_code:"new.edit"}, {code:"generate", operation_code:"custom.generate"}];
  assert.deepEqual(operations.reconcileModelOperations(["old.edit", "image.text_to_image", "unsaved.custom"],before,after,["generate"]),["new.edit","image.text_to_image","unsaved.custom","custom.generate"]);
 });
+
+test("operation categories follow execution binding even after public rename", () => {
+ assert.equal(typeof operations.operationCategory, "function");
+ for (const [execution,expected] of [["video.generate","video"],["audio.text_to_speech","audio"],["image.upscale","image"],["responses.multimodal","dialog"],["agent.chat","dialog"],["prompt.enhance.video","prompt"]]) {
+  assert.equal(operations.operationCategory({operation_code:"renamed/user",execution_operation_code:execution}),expected);
+ }
+});

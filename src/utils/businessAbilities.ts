@@ -174,3 +174,8 @@ export function reconcileModelOperations(
  }
  return [...new Set(values)];
 }
+
+export function operationCategory(ability: Pick<BusinessAbility, "operation_code" | "execution_operation_code">) {
+ const prefix = (ability.execution_operation_code || ability.operation_code).split(".")[0];
+ return prefix === "responses" || prefix === "agent" ? "dialog" : prefix;
+}

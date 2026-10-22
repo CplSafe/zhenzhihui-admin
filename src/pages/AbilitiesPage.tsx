@@ -29,6 +29,7 @@ import { Permission } from "@/types/admin";
 import type { BusinessAbility } from "@/types/domain";
 import {
   DIRECT_OPERATIONS,
+  operationCategory,
   abilityModelOptions,
   fitsAbilityTextLimit,
 } from "@/utils/businessAbilities";
@@ -320,6 +321,7 @@ export function AbilitiesPage({ onBusyChange }: { onBusyChange?: (busy: boolean)
   const qc = useQueryClient();
   const [editing, setEditing] = useState<BusinessAbility | null | undefined>();
   const [keyword, setKeyword] = useState("");
+  const [category, setCategory] = useState<string>();
   const [status, setStatus] = useState<boolean | undefined>();
   const abilities = useQuery({
     queryKey: ["admin", "abilities"],
@@ -437,6 +439,7 @@ export function AbilitiesPage({ onBusyChange }: { onBusyChange?: (busy: boolean)
   ];
   const visible = (abilities.data ?? []).filter(
     (ability) =>
+      (category === undefined || operationCategory(ability) === category) &&
       (status === undefined || status === ability.enabled) &&
       `${ability.code} ${ability.operation_code} ${ability.display_name} ${ability.description}`
         .toLowerCase()
@@ -467,6 +470,8 @@ export function AbilitiesPage({ onBusyChange }: { onBusyChange?: (busy: boolean)
                 onSearch={setKeyword}
                 style={{ width: 260 }}
               />
+              <Select allowClear placeholder="全部类型" value={category} onChange={setCategory} style={{width:140}}
+                options={[{value:"image",label:"图片"},{value:"video",label:"视频"},{value:"audio",label:"音频"},{value:"dialog",label:"对话"},{value:"prompt",label:"提示词"}]} />
               <Select
                 allowClear
                 placeholder="启用状态"
