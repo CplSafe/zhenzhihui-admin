@@ -80,7 +80,6 @@ export function WorkspacesPage() {
   useEffect(() => {
     if (!statWs) return
     let alive = true
-    setStatsLoading(true)
     listWorkspaceMemberStatistics(statWs.id)
       .then((rows) => {
         if (alive) setStats(rows ?? [])
@@ -102,7 +101,6 @@ export function WorkspacesPage() {
   useEffect(() => {
     if (!auditWs) return
     let alive = true
-    setAuditsLoading(true)
     listWorkspaceAuditLogs(auditWs.id, { limit: 100 })
       .then((page) => {
         if (alive) setAudits(page.items ?? [])
@@ -154,10 +152,10 @@ export function WorkspacesPage() {
       width: 180,
       render: (_, row) => (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => setStatWs(row)}>
+          <Button type="link" size="small" onClick={() => { setStatsLoading(true); setStatWs(row) }}>
             成员统计
           </Button>
-          <Button type="link" size="small" onClick={() => setAuditWs(row)}>
+          <Button type="link" size="small" onClick={() => { setAuditsLoading(true); setAuditWs(row) }}>
             审计日志
           </Button>
         </Space>
