@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   App,
@@ -28,31 +28,11 @@ import { Mono, StatusTag } from "@/components/cells";
 import { Permission } from "@/types/admin";
 import type { BusinessAbility } from "@/types/domain";
 import {
+  DIRECT_OPERATIONS,
   abilityModelOptions,
   fitsAbilityTextLimit,
 } from "@/utils/businessAbilities";
 
-// These are the backend's implemented execution bindings, not arbitrary tags.
-const DIRECT_OPERATIONS = [
-  "image.text_to_image",
-  "image.image_to_image",
-  "image.upscale",
-  "video.upscale",
-  "responses.multimodal",
-  "prompt.enhance.video",
-  "prompt.enhance.image",
-  "prompt.enhance.polish",
-  "image.face_blur",
-  "image.face_detect",
-  "video.replicate",
-  "video.generate",
-  "video.edit",
-  "video.extend",
-  "agent.chat",
-  "audio.speech_to_text",
-  "audio.generate",
-  "audio.text_to_speech",
-];
 const TOOL_BINDINGS = [
   ["image.multi_angle", 1, "多角度编辑"],
   ["image.multi_angle", 2, "多角度编辑"],
@@ -335,7 +315,7 @@ function AbilityEditor({
   );
 }
 
-export function AbilitiesPage() {
+export function AbilitiesPage({ onBusyChange }: { onBusyChange?: (busy: boolean) => void } = {}) {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<BusinessAbility | null | undefined>();
@@ -373,6 +353,7 @@ export function AbilitiesPage() {
     },
     onError,
   });
+  useEffect(() => { onBusyChange?.(save.isPending || toggle.isPending); }, [save.isPending, toggle.isPending, onBusyChange]);
   const columns: TableColumnsType<BusinessAbility> = [
     {
       title: "能力代码",

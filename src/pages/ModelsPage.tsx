@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   App,
@@ -16,7 +16,8 @@ import {
 import type { TableColumnsType, UploadProps } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { abilitySupportsModel } from "@/utils/businessAbilities";
+import { AbilitiesPage } from "@/pages/AbilitiesPage";
+import { abilitySupportsModel, modelOperationOptions, reconcileModelOperations } from "@/utils/businessAbilities";
 import { listAbilities } from "@/api/abilities";
 import { ModelAbilitiesField } from "@/components/ModelAbilitiesField";
 import { ModelOrderButton } from "@/components/ModelOrderButton";
@@ -74,6 +75,9 @@ export function ModelsPage() {
   const { message } = App.useApp();
   const exchangeRate = useExchangeRate();
   const qc = useQueryClient();
+  const [manageOperations, setManageOperations] = useState(false);
+  const [operationsBusy, setOperationsBusy] = useState(false);
+  const [operationSnapshot, setOperationSnapshot] = useState<{code:string;operation_code:string}[]>([]);
   const [filters, setFilters] = useState<Filters>({});
   // editId: null=未开抽屉, 0=新增, >0=编辑该 ID
   const [editId, setEditId] = useState<number | null>(null);
@@ -133,10 +137,14 @@ export function ModelsPage() {
     setProbe(null);
   }
 
-  // 编辑回填:editId 切换或详情首次到达时填表单。
-  // 当前 detail 查询在抽屉打开期间不会被 invalidate(refetchOnWindowFocus 全局关闭),
-  // 故不会用刷新数据覆盖未保存编辑;若将来给该查询加 invalidate,需改为"每目标只填一次"。
+  // Ability edits invalidate model queries. Hydrate once per target so refetches
+  // cannot overwrite unsaved model fields while managing operations.
+  const initializedTarget = useRef<string | null>(null);
   useEffect(() => {
+    if (editId === null) { initializedTarget.current = null; return; }
+    if (initializedTarget.current === target) return;
+    if ((isCopy || editId > 0) && (!detail.data || detail.data.id !== detailId)) return;
+    initializedTarget.current = target;
     if (isCopy) {
       if (detail.data) form.setFieldsValue(copiedModelFormValues(detail.data));
       return;
@@ -149,7 +157,7 @@ export function ModelsPage() {
     if (editId && editId > 0 && detail.data) {
       form.setFieldsValue(modelFormValues(detail.data));
     }
-  }, [editId, isCopy, detail.data, form]);
+  }, [editId, isCopy, detail.data, detailId, form, target]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-models-list"] });
@@ -492,11 +500,19 @@ export function ModelsPage() {
           <Form.Item name="allowed_plans" label="允许的套餐 (plan code)">
             <Select mode="tags" placeholder="回车输入,如 30-foundation / 30-team" />
           </Form.Item>
-          <Form.Item name="operation_codes" label="操作码 (operation_codes)">
+          <Form.Item name="operation_codes" label={
+            <Space>操作码 (operation_codes)
+              <Can permission={Permission.MODELS_WRITE}>
+                <Button type="link" size="small" onClick={() => { setOperationSnapshot(abilities.data ?? []); setManageOperations(true); }}>管理操作码</Button>
+              </Can>
+            </Space>
+          } extra="支持搜索内置操作码和业务操作码；内置执行协议固定，业务操作码可在此管理。保存时由后端校验模型兼容性。">
             <Select
               mode="tags"
-              placeholder="选择已配置业务操作码，或回车输入操作码"
-              options={abilities.data?.map(ability => ({ value: ability.operation_code, label: `${ability.display_name} · ${ability.operation_code}${ability.enabled ? "" : "（已停用）"}` }))}
+              placeholder="搜索或选择操作码，如 image.upscale / video.upscale"
+              showSearch
+              optionFilterProp="label"
+              options={modelOperationOptions(abilities.data ?? [], watchedOps ?? [])}
             />
           </Form.Item>
           {abilities.isError && (
@@ -582,6 +598,16 @@ export function ModelsPage() {
             ]}
           />
         </Form>
+      </Drawer>
+      <Drawer title="管理业务操作码" width="min(1100px, 96vw)" open={manageOperations} closable={!operationsBusy} maskClosable={!operationsBusy} keyboard={!operationsBusy}
+        onClose={async () => {
+          const refreshed = await abilities.refetch();
+          if (refreshed.isError) { message.error("操作码刷新失败，请重试后关闭"); return; }
+          form.setFieldValue("operation_codes", reconcileModelOperations(form.getFieldValue("operation_codes") ?? [], operationSnapshot, refreshed.data ?? [], form.getFieldValue("ability_codes") ?? []));
+          setManageOperations(false);
+        }} destroyOnHidden>
+        <Alert type="info" showIcon title="修改业务操作码与执行绑定后生效；内置操作码属于固定执行协议。" style={{marginBottom: 16}} />
+        <AbilitiesPage onBusyChange={setOperationsBusy} />
       </Drawer>
     </>
   );

@@ -136,3 +136,41 @@ export function fitsAbilityTextLimit(
     (field === "description" ? 4096 : 128)
   );
 }
+
+// Keep execution choices shared by the model form and business binding editor.
+export const DIRECT_OPERATIONS = [
+ "image.text_to_image", "image.image_to_image", "image.upscale", "video.upscale",
+ "responses.multimodal", "prompt.enhance.video", "prompt.enhance.image", "prompt.enhance.polish",
+ "image.face_blur", "image.face_detect", "video.replicate", "video.generate", "video.edit", "video.extend",
+ "agent.chat", "audio.speech_to_text", "audio.generate", "audio.text_to_speech",
+];
+
+export function modelOperationOptions(
+ abilities: Pick<BusinessAbility, "operation_code" | "display_name" | "enabled">[],
+ selected: string[] = [],
+) {
+ const choices = new Map(DIRECT_OPERATIONS.map(code => [code, {value: code, label: code}]));
+ for (const ability of abilities) choices.set(ability.operation_code, {
+  value: ability.operation_code,
+  label: `${ability.display_name} · ${ability.operation_code}${ability.enabled ? "" : "（已停用）"}`,
+ });
+ for (const code of selected) if (!choices.has(code)) choices.set(code, {value: code, label: code});
+ return [...choices.values()];
+}
+
+export function reconcileModelOperations(
+ selected: string[],
+ previous: Pick<BusinessAbility, "code" | "operation_code">[],
+ current: Pick<BusinessAbility, "code" | "operation_code">[],
+ assigned: string[],
+) {
+ const renames = previous.flatMap(before => {
+  const after = current.find(item => item.code === before.code);
+  return after && after.operation_code !== before.operation_code ? [{...before, next:after.operation_code}] : [];
+ });
+ const values = selected.map(code => DIRECT_OPERATIONS.includes(code) ? code : (renames.find(item => item.operation_code === code)?.next ?? code));
+ for (const item of renames) {
+  if (DIRECT_OPERATIONS.includes(item.operation_code) && selected.includes(item.operation_code) && assigned.includes(item.code)) values.push(item.next);
+ }
+ return [...new Set(values)];
+}
