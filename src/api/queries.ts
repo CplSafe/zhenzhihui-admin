@@ -108,6 +108,7 @@ export interface AssetListParams extends Paginated {
   user_id?: number;
   type?: string;
   status?: string;
+  seedance_status?: string;
 }
 export const listAssets = listGet<Asset, AssetListParams>("/admin/assets");
 export const getAsset = (id: number) => http.get<Asset>(`/admin/assets/${id}`);

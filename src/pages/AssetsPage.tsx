@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Descriptions, Drawer, Image, Input, Select, Space } from 'antd'
+import { Button, Descriptions, Drawer, Image, Input, Select, Space, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { ListPageShell } from '@/components/ListPageShell'
@@ -16,6 +16,26 @@ interface Filters {
   user_id?: number
   type?: string
   status?: string
+  seedance_status?: string
+}
+
+const reviewStates: Record<string, { label: string; color: string }> = {
+  submitting: { label: '送审中', color: 'processing' },
+  processing: { label: '审核中', color: 'processing' },
+  active: { label: '审核通过', color: 'success' },
+  failed: { label: '审核失败', color: 'error' },
+}
+
+function SeedanceReviewTag({ asset }: { asset: Asset }) {
+  const review = asset.seedance_moderation
+  if (review === undefined) return <Tag>状态未提供</Tag>
+  if (review === null) return <Tag>未送审</Tag>
+  const state = reviewStates[review.status]
+  return (
+    <Tooltip title={review.last_error || `最近同步：${fmtTime(review.updated_at)}`}>
+      <Tag color={state?.color}>{state?.label || '未知审核状态'}</Tag>
+    </Tooltip>
+  )
 }
 
 // 预览区:按需签发 URL,按类型渲染图片/视频/音频。
@@ -60,7 +80,7 @@ export function AssetsPage() {
   const [filters, setFilters] = useState<Filters>({})
   const [active, setActive] = useState<Asset | null>(null)
 
-  const { items, loading, error, pagination } = usePagedList<Asset, Filters>({
+  const { items, loading, error, pagination, refetch } = usePagedList<Asset, Filters>({
     queryKey: 'admin-assets-list',
     filters,
     fetcher: listAssets,
@@ -94,6 +114,12 @@ export function AssetsPage() {
       dataIndex: 'status',
       width: 100,
       render: (v) => <StatusTag status={v} />,
+    },
+    {
+      title: 'Seedance 审核',
+      key: 'seedance_moderation',
+      width: 140,
+      render: (_, r) => <SeedanceReviewTag asset={r} />,
     },
     {
       title: '创建时间',
@@ -147,7 +173,7 @@ export function AssetsPage() {
             />
             <Select
               allowClear
-              placeholder="状态"
+              placeholder="素材状态"
               style={{ width: 130 }}
               options={[
                 { value: 'active', label: 'active' },
@@ -157,6 +183,20 @@ export function AssetsPage() {
               ]}
               onChange={(v) => setFilters((f) => ({ ...f, status: v }))}
             />
+            <Select
+              aria-label="Seedance 审核状态"
+              allowClear
+              placeholder="Seedance 审核"
+              style={{ width: 170 }}
+              options={[
+                { value: 'submitted', label: '已送审（全部状态）' },
+                { value: 'unsubmitted', label: '未送审' },
+                ...Object.entries(reviewStates).map(([value, state]) => ({ value, label: state.label })),
+              ]}
+              onChange={(v) => setFilters((f) => ({ ...f, seedance_status: v }))}
+            />
+            <Button loading={loading} onClick={() => { void refetch() }}>刷新列表</Button>
+
           </Space>
         }
         columns={columns}
@@ -193,6 +233,14 @@ export function AssetsPage() {
               <Descriptions.Item label="状态">
                 <StatusTag status={active.status} />
               </Descriptions.Item>
+              <Descriptions.Item label="Seedance 审核">
+                <SeedanceReviewTag asset={active} />
+              </Descriptions.Item>
+              {active.seedance_moderation && <>
+                <Descriptions.Item label="送审时间">{fmtTime(active.seedance_moderation.created_at)}</Descriptions.Item>
+                <Descriptions.Item label="最近同步">{fmtTime(active.seedance_moderation.updated_at)}</Descriptions.Item>
+                {active.seedance_moderation.last_error && <Descriptions.Item label="审核提示">{active.seedance_moderation.last_error}</Descriptions.Item>}
+              </>}
               <Descriptions.Item label="对象键">
                 <Mono>{active.object_key}</Mono>
               </Descriptions.Item>

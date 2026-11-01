@@ -122,6 +122,15 @@ export interface AITask extends WorkspaceScoped {
   result_json?: unknown;
 }
 
+export interface SeedanceModeration extends Entity {
+  updated_at: string;
+  status: 'submitting' | 'processing' | 'active' | 'failed';
+  asset_id: number;
+  workspace_id: number;
+  user_id: number;
+  last_error?: string;
+}
+
 export interface Asset extends WorkspaceScoped {
   task_id?: number;
   type: AssetType;
@@ -135,6 +144,7 @@ export interface Asset extends WorkspaceScoped {
   storage_etag?: string;
   prompt?: string;
   status: AssetStatus;
+  seedance_moderation?: SeedanceModeration | null;
 }
 
 export interface PaymentOrder extends WorkspaceScoped {
