@@ -28,6 +28,7 @@ export interface MenuItemConfig {
 }
 
 export const menuConfig: MenuItemConfig[] = [
+ { key: "templates", path: "/templates", label: "模板库", icon: <PictureOutlined />, permission: Permission.TEMPLATES_READ },
   {
     key: "overview",
     path: "/overview",

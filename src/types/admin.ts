@@ -39,6 +39,8 @@ export const RoleCode = {
 export type RoleCodeValue = (typeof RoleCode)[keyof typeof RoleCode];
 
 export const Permission = {
+ TEMPLATES_READ: "admin.templates.read",
+ TEMPLATES_WRITE: "admin.templates.write",
  ROLES_READ: "admin.roles.read",
  ROLES_WRITE: "admin.roles.write",
  REQUEST_LOGS_READ: "admin.request_logs.read",
