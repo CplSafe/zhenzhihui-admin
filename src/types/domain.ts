@@ -75,6 +75,19 @@ export interface Workspace extends MutableEntity {
   status: WorkspaceStatus;
 }
 
+// 管理端累计使用统计；积分已换算为正常积分，不能再次除以 1000。
+export interface UsageSummary {
+  used_credits: number;
+  video_count: number;
+  image_count: number;
+  remaining_credits: number | null;
+  // 缺少任意视频时长时为 null，known 字段仅代表已统计部分。
+  video_duration_seconds: number | null;
+  known_video_duration_seconds: number;
+  estimated_video_count: number;
+  missing_video_duration_count: number;
+}
+
 // 空间内单个成员的消耗/作品统计(本月 Asia/Shanghai + 累计),对应后端 admin.WorkspaceMemberStatItem。
 // 消耗积分只计 settle(结算),作品数只计 active。
 export interface WorkspaceMemberStat {
@@ -117,9 +130,19 @@ export interface AITask extends WorkspaceScoped {
   credit_revenue_cents?: number | null;
   profit_cents?: number | null;
   error_message?: string;
+  provider_error_detail?: string;
   // 仅详情接口 GET /admin/ai/tasks/:id 返回的大字段。
   request_json?: unknown;
   result_json?: unknown;
+}
+
+export interface SeedanceModeration extends Entity {
+  updated_at: string;
+  status: 'submitting' | 'processing' | 'active' | 'failed';
+  asset_id: number;
+  workspace_id: number;
+  user_id: number;
+  last_error?: string;
 }
 
 export interface Asset extends WorkspaceScoped {
@@ -135,6 +158,7 @@ export interface Asset extends WorkspaceScoped {
   storage_etag?: string;
   prompt?: string;
   status: AssetStatus;
+  seedance_moderation?: SeedanceModeration | null;
 }
 
 export interface PaymentOrder extends WorkspaceScoped {

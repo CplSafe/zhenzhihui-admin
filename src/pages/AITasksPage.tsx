@@ -228,6 +228,18 @@ export function AITasksPage() {
             <Descriptions.Item label="错误信息">
               {detail.data.error_message || '-'}
             </Descriptions.Item>
+            <Descriptions.Item label="上游错误原因（已脱敏）">
+              {detail.data.provider_error_detail ? (
+                <Typography.Paragraph
+                  copyable
+                  style={{ marginBottom: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+                >
+                  {detail.data.provider_error_detail}
+                </Typography.Paragraph>
+              ) : (
+                <Typography.Text type="secondary">未记录上游错误详情</Typography.Text>
+              )}
+            </Descriptions.Item>
             <Descriptions.Item label="Prompt">
               {detail.data.prompt || '-'}
             </Descriptions.Item>

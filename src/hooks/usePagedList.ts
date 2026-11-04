@@ -8,6 +8,7 @@ const DEFAULT_PAGE_SIZE = 20;
 
 interface UsePagedListArgs<T, F extends object> {
   queryKey: string;
+  initialPageSize?: number;
   filters: F;
   fetcher: (
     params: F & { limit: number; offset: number },
@@ -18,9 +19,10 @@ export function usePagedList<T, F extends object>({
   queryKey,
   filters,
   fetcher,
+  initialPageSize = DEFAULT_PAGE_SIZE,
 }: UsePagedListArgs<T, F>) {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   // Reset page on filter change in render phase to avoid a wasted render with stale page.
   const filtersKey = JSON.stringify(filters);

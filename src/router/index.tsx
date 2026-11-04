@@ -1,3 +1,6 @@
+import { PromoPage } from "@/pages/PromoPage";
+import { ManualVideosPage } from "@/pages/ManualVideosPage";
+import { TemplatesPage } from "@/pages/TemplatesPage";
 import { createBrowserRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -36,6 +39,9 @@ import { VoiceSlotsPage } from "@/pages/VoiceSlotsPage";
 
 // 各菜单 key 对应的页面组件。
 const pageByKey: Record<string, ReactNode> = {
+ "promo-t5": <PromoPage />,
+ "manual-video": <ManualVideosPage />,
+ templates: <TemplatesPage />,
   voices: <PublicVoicesPage />,
   "voice-slots": <VoiceSlotsPage />,
   overview: <OverviewPage />,

@@ -19,6 +19,7 @@ import type { TableColumnsType } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
+import { UsageSummaryPanel } from "@/components/UsageSummaryPanel";
 import { Credits, Mono } from "@/components/cells";
 import { usePagedList } from "@/hooks/usePagedList";
 import { getUser, listUsers } from "@/api/queries";
@@ -134,8 +135,10 @@ function UserDetailDrawer({
     enabled: userId !== null,
   });
 
-  const refresh = () =>
-    qc.invalidateQueries({ queryKey: ["admin", "user-detail", userId] });
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ["admin", "user-detail", userId] });
+    void qc.invalidateQueries({ queryKey: ["admin", "usage-summary"] });
+  };
 
   return (
     <>
@@ -149,6 +152,7 @@ function UserDetailDrawer({
       >
         {detail.data && (
           <Space direction="vertical" size={16} style={{ width: "100%" }}>
+            {userId !== null && <UsageSummaryPanel scope="user" id={userId} />}
             <Descriptions column={1} bordered size="small" title="基础信息">
               <Descriptions.Item label="昵称">
                 {detail.data.user.nickname || "-"}

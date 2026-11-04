@@ -30,6 +30,7 @@ export interface AdminSession {
 // 角色与权限 code 常量,对应 internal/admin/permissions.go。
 export const RoleCode = {
   SUPER_ADMIN: "super_admin",
+  MANUAL_VIDEO_OPERATOR: "manual_video_operator",
   OPS_ADMIN: "ops_admin",
   FINANCE_ADMIN: "finance_admin",
   MODEL_ADMIN: "model_admin",
@@ -39,6 +40,12 @@ export const RoleCode = {
 export type RoleCodeValue = (typeof RoleCode)[keyof typeof RoleCode];
 
 export const Permission = {
+ PROMO_READ: "admin.promo.read",
+ PROMO_WRITE: "admin.promo.write",
+ MANUAL_VIDEO_READ: "admin.manual_video.read",
+ MANUAL_VIDEO_WRITE: "admin.manual_video.write",
+ TEMPLATES_READ: "admin.templates.read",
+ TEMPLATES_WRITE: "admin.templates.write",
  ROLES_READ: "admin.roles.read",
  ROLES_WRITE: "admin.roles.write",
  REQUEST_LOGS_READ: "admin.request_logs.read",

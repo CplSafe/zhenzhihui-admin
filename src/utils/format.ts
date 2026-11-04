@@ -37,6 +37,16 @@ export const fmtDate = (t?: string | null): string => fmtDayjs(t, "YYYY-MM-DD");
 export const fmtNumber = (n?: number | null): string =>
   hasValue(n) ? n.toLocaleString("en-US") : DASH;
 
+// 时长不使用日期格式，避免超过 24 小时后回绕；保留百分之一秒。
+export const fmtDuration = (seconds?: number | null): string => {
+  if (!hasValue(seconds) || !Number.isFinite(seconds) || seconds < 0) return DASH;
+  const centiseconds = Math.round(seconds * 100);
+  const hours = Math.floor(centiseconds / 360_000);
+  const minutes = Math.floor((centiseconds % 360_000) / 6_000);
+  const remainingSeconds = (centiseconds % 6_000) / 100;
+  return `${hours ? `${hours} 小时 ` : ""}${hours || minutes ? `${minutes} 分 ` : ""}${remainingSeconds} 秒`;
+};
+
 // 积分:后端精度 0.001,千分位 + 最多 3 位小数(去尾零),供对账。
 const CREDITS_FMT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 });
 

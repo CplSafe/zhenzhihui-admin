@@ -44,6 +44,7 @@ export function AdminUsersPage() {
   const qc = useQueryClient();
  const rolesQuery = useQuery({ queryKey: ["admin-roles"], queryFn: listRoles });
  const roleOptions = (rolesQuery.data ?? []).map(role => ({ value: role.code, label: `${role.name}${role.status === "disabled" ? "（已禁用）" : ""}`, disabled: role.status !== "active" }));
+  const roleHelp = rolesQuery.error ? `角色加载失败：${rolesQuery.error.message}` : "可分配多个角色，权限取并集。制作人员仅分配「人工视频制作」即可；叠加其他角色会扩大访问范围。";
   const [filters, setFilters] = useState<Filters>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [edit, setEdit] = useState<EditState | null>(null);
@@ -262,7 +263,7 @@ export function AdminUsersPage() {
           <Form.Item
             name="roles"
             label="角色"
- extra={rolesQuery.error ? `角色加载失败：${rolesQuery.error.message}` : "可分配多个角色，权限取并集"}
+ extra={roleHelp}
             rules={[{ required: true, message: "至少选择一个角色" }]}
           >
             <Select
@@ -297,7 +298,7 @@ export function AdminUsersPage() {
           <Form.Item
             name="roles"
             label="角色"
- extra={rolesQuery.error ? `角色加载失败：${rolesQuery.error.message}` : "可分配多个角色，权限取并集"}
+ extra={roleHelp}
             rules={[{ required: true, message: "至少选择一个角色" }]}
           >
             <Select

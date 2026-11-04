@@ -12,6 +12,7 @@ import type {
   ReferralBindingItem,
   Subscription,
   User,
+  UsageSummary,
   Workspace,
   WorkspaceAuditLog,
   WorkspaceMemberStat,
@@ -49,6 +50,8 @@ export interface UserListParams extends Paginated {
 export const listUsers = listGet<User, UserListParams>("/admin/users");
 export const getUser = (id: number) =>
   http.get<AdminUserDetail>(`/admin/users/${id}`);
+export const getUserUsageSummary = (id: number) =>
+  http.get<UsageSummary>(`/admin/users/${id}/usage-summary`);
 
 // 销售数据(推广绑定):按 邀请人/被邀请人 的 ID/手机号 查询。
 export interface ReferralBindingListParams extends Paginated {
@@ -72,6 +75,8 @@ export const listWorkspaces = listGet<Workspace, WorkspaceListParams>(
 );
 export const getWorkspace = (id: number) =>
   http.get<unknown>(`/admin/workspaces/${id}`);
+export const getWorkspaceUsageSummary = (id: number) =>
+  http.get<UsageSummary>(`/admin/workspaces/${id}/usage-summary`);
 export const listWorkspaceMembers = (id: number) =>
   http.get<unknown[]>(`/admin/workspaces/${id}/members`);
 export const listWorkspaceMemberStatistics = (id: number) =>
@@ -108,6 +113,7 @@ export interface AssetListParams extends Paginated {
   user_id?: number;
   type?: string;
   status?: string;
+  seedance_status?: string;
 }
 export const listAssets = listGet<Asset, AssetListParams>("/admin/assets");
 export const getAsset = (id: number) => http.get<Asset>(`/admin/assets/${id}`);

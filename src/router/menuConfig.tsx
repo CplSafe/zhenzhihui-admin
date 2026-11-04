@@ -28,6 +28,7 @@ export interface MenuItemConfig {
 }
 
 export const menuConfig: MenuItemConfig[] = [
+ { key: "templates", path: "/templates", label: "模板库", icon: <PictureOutlined />, permission: Permission.TEMPLATES_READ },
   {
     key: "overview",
     path: "/overview",
@@ -56,6 +57,8 @@ export const menuConfig: MenuItemConfig[] = [
     icon: <RobotOutlined />,
     permission: Permission.TASKS_READ,
   },
+ { key: "promo-t5", path: "/promo-t5", label: "定制宣传片 T+5", icon: <PictureOutlined />, permission: Permission.PROMO_READ },
+ { key: "manual-video", path: "/manual-video", label: "人工视频制作", icon: <PictureOutlined />, permission: Permission.MANUAL_VIDEO_READ },
   {
     key: "assets",
     path: "/assets",

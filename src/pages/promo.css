@@ -1,0 +1,27 @@
+.promo-page {
+  min-width: 0;
+}
+.promo-page strong {
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  margin-left: 8px;
+}
+.promo-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.promo-material,
+.promo-notice {
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+@media (max-width: 600px) {
+  .promo-page .ant-picker-range {
+    max-width: 100%;
+  }
+  .promo-page .ant-space-item {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

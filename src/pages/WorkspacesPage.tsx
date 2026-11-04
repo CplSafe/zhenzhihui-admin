@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Drawer, Input, Select, Space, Table, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { ListPageShell } from '@/components/ListPageShell'
+import { UsageSummaryPanel } from '@/components/UsageSummaryPanel'
 import { Credits, Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
 import {
@@ -70,6 +71,7 @@ interface Filters {
 
 export function WorkspacesPage() {
   const [filters, setFilters] = useState<Filters>({ keyword: '' })
+  const [summaryWs, setSummaryWs] = useState<Workspace | null>(null)
   const [statWs, setStatWs] = useState<Workspace | null>(null)
   const [stats, setStats] = useState<WorkspaceMemberStat[]>([])
   const [statsLoading, setStatsLoading] = useState(false)
@@ -80,7 +82,6 @@ export function WorkspacesPage() {
   useEffect(() => {
     if (!statWs) return
     let alive = true
-    setStatsLoading(true)
     listWorkspaceMemberStatistics(statWs.id)
       .then((rows) => {
         if (alive) setStats(rows ?? [])
@@ -102,7 +103,6 @@ export function WorkspacesPage() {
   useEffect(() => {
     if (!auditWs) return
     let alive = true
-    setAuditsLoading(true)
     listWorkspaceAuditLogs(auditWs.id, { limit: 100 })
       .then((page) => {
         if (alive) setAudits(page.items ?? [])
@@ -151,13 +151,16 @@ export function WorkspacesPage() {
     {
       title: '操作',
       key: 'action',
-      width: 180,
+      width: 260,
       render: (_, row) => (
-        <Space size="small">
-          <Button type="link" size="small" onClick={() => setStatWs(row)}>
+        <Space size="small" wrap>
+          <Button type="link" size="small" onClick={() => setSummaryWs(row)}>
+            使用统计
+          </Button>
+          <Button type="link" size="small" onClick={() => { setStatsLoading(true); setStatWs(row) }}>
             成员统计
           </Button>
-          <Button type="link" size="small" onClick={() => setAuditWs(row)}>
+          <Button type="link" size="small" onClick={() => { setAuditsLoading(true); setAuditWs(row) }}>
             审计日志
           </Button>
         </Space>
@@ -217,6 +220,15 @@ export function WorkspacesPage() {
         error={error}
         pagination={pagination}
       />
+      <Drawer
+        title={summaryWs ? `使用统计 · ${summaryWs.name} #${summaryWs.id}` : '使用统计'}
+        width={680}
+        open={summaryWs !== null}
+        onClose={() => setSummaryWs(null)}
+        destroyOnHidden
+      >
+        {summaryWs && <UsageSummaryPanel scope="workspace" id={summaryWs.id} />}
+      </Drawer>
       <Drawer
         title={statWs ? `成员统计 · ${statWs.name}` : '成员统计'}
         width={820}
