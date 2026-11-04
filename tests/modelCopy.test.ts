@@ -18,6 +18,7 @@ const source: ModelVersion = {
   task_mode: "sync",
   allowed_plans: ["team"],
   operation_codes: ["image.text_to_image", "image.image_to_image"],
+  ability_codes: ["text_to_image", "image_edit"],
   pricing: { output_credit_rate: 54 },
   params_schema: { fields: [{ name: "ratio" }] },
   result_schema: { kind: "image" },
@@ -37,6 +38,7 @@ test("edit form carries every writable field of the model", () => {
     task_mode: "sync",
     allowed_plans: ["team"],
     operation_codes: ["image.text_to_image", "image.image_to_image"],
+    ability_codes: ["text_to_image", "image_edit"],
     pricing: { output_credit_rate: 54 },
     params_schema: { fields: [{ name: "ratio" }] },
     result_schema: { kind: "image" },
@@ -60,6 +62,8 @@ test("copy keeps all config but forces a new version and starts disabled", () =>
 test("copy does not share nested objects with the source", () => {
   const copy = copiedModelFormValues(source);
   (copy.operation_codes as string[]).push("mutated");
+  (copy.ability_codes as string[]).push("mutated");
+  assert.deepEqual(source.ability_codes, ["text_to_image", "image_edit"]);
   (copy.system_prompts as Record<string, string>)["image.text_to_image"] = "mutated";
   assert.deepEqual(source.operation_codes, ["image.text_to_image", "image.image_to_image"]);
   assert.equal(source.system_prompts?.["image.text_to_image"], "be nice");

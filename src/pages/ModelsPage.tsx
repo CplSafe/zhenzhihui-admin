@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   App,
@@ -16,6 +16,10 @@ import {
 import type { TableColumnsType, UploadProps } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AbilitiesPage } from "@/pages/AbilitiesPage";
+import { abilitySupportsModel, modelOperationOptions, reconcileModelOperations } from "@/utils/businessAbilities";
+import { listAbilities } from "@/api/abilities";
+import { ModelAbilitiesField } from "@/components/ModelAbilitiesField";
 import { ModelOrderButton } from "@/components/ModelOrderButton";
 import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
@@ -71,6 +75,9 @@ export function ModelsPage() {
   const { message } = App.useApp();
   const exchangeRate = useExchangeRate();
   const qc = useQueryClient();
+  const [manageOperations, setManageOperations] = useState(false);
+  const [operationsBusy, setOperationsBusy] = useState(false);
+  const [operationSnapshot, setOperationSnapshot] = useState<{code:string;operation_code:string}[]>([]);
   const [filters, setFilters] = useState<Filters>({});
   // editId: null=未开抽屉, 0=新增, >0=编辑该 ID
   const [editId, setEditId] = useState<number | null>(null);
@@ -88,9 +95,16 @@ export function ModelsPage() {
   const [form] = Form.useForm<ModelWriteBody>();
   // system_prompts 的 opcode 下拉来源:跟随表单里已填的 operation_codes。
   const watchedOps = Form.useWatch("operation_codes", form);
+  const abilities = useQuery({
+    queryKey: ["admin", "abilities"],
+    queryFn: listAbilities,
+    enabled: editId !== null,
+  });
   const watchedCapability = Form.useWatch("capability", form);
   const watchedProvider = Form.useWatch("provider", form);
   const watchedVersion = Form.useWatch("version", form);
+  const watchedModel = Form.useWatch("model", form);
+  const execution = { provider: watchedProvider ?? "", model: watchedModel ?? "", version: watchedVersion ?? "", capability: watchedCapability ?? "", operation_codes: watchedOps ?? [] };
   const [uploadingLogo, setUploadingLogo] = useState(false);
   // 各 JSON 字段合法性;任一非法则禁用保存,避免非法 JSON 静默存旧值(见 JsonField)。
   const [jsonValid, setJsonValid] = useState<Record<string, boolean>>({});
@@ -123,26 +137,31 @@ export function ModelsPage() {
     setProbe(null);
   }
 
-  // 编辑回填:editId 切换或详情首次到达时填表单。
-  // 当前 detail 查询在抽屉打开期间不会被 invalidate(refetchOnWindowFocus 全局关闭),
-  // 故不会用刷新数据覆盖未保存编辑;若将来给该查询加 invalidate,需改为"每目标只填一次"。
+  // Ability edits invalidate model queries. Hydrate once per target so refetches
+  // cannot overwrite unsaved model fields while managing operations.
+  const initializedTarget = useRef<string | null>(null);
   useEffect(() => {
+    if (editId === null) { initializedTarget.current = null; return; }
+    if (initializedTarget.current === target) return;
+    if ((isCopy || editId > 0) && (!detail.data || detail.data.id !== detailId)) return;
+    initializedTarget.current = target;
     if (isCopy) {
       if (detail.data) form.setFieldsValue(copiedModelFormValues(detail.data));
       return;
     }
     if (editId === 0) {
       form.resetFields();
-      form.setFieldsValue({ enabled: true, task_mode: "sync", sort_order: 0 });
+      form.setFieldsValue({ enabled: true, task_mode: "sync", sort_order: 0, ability_codes: [] });
       return;
     }
     if (editId && editId > 0 && detail.data) {
       form.setFieldsValue(modelFormValues(detail.data));
     }
-  }, [editId, isCopy, detail.data, form]);
+  }, [editId, isCopy, detail.data, detailId, form, target]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-models-list"] });
+    qc.invalidateQueries({ queryKey: ["admin", "models", "all"] });
     refetch();
   };
 
@@ -372,7 +391,7 @@ export function ModelsPage() {
             <Button
               type="primary"
               loading={saveMut.isPending}
-              disabled={!allJsonValid}
+              disabled={!allJsonValid || abilities.isPending || abilities.isError || detail.isError || ((isEdit || isCopy) && detail.isFetching)}
               onClick={() => form.submit()}
             >
               保存
@@ -380,6 +399,8 @@ export function ModelsPage() {
           </Space>
         }
       >
+        {detail.isError && <Alert type="error" showIcon title="模型详情加载失败" description={detail.error.message}
+          action={<Button onClick={() => detail.refetch()}>重试</Button>} style={{ marginBottom: 16 }} />}
         {probe && (
           <Alert
             type="success"
@@ -479,11 +500,41 @@ export function ModelsPage() {
           <Form.Item name="allowed_plans" label="允许的套餐 (plan code)">
             <Select mode="tags" placeholder="回车输入,如 30-foundation / 30-team" />
           </Form.Item>
-          <Form.Item name="operation_codes" label="操作码 (operation_codes)">
+          <Form.Item name="operation_codes" label={
+            <Space>操作码 (operation_codes)
+              <Can permission={Permission.MODELS_WRITE}>
+                <Button type="link" size="small" onClick={() => { setOperationSnapshot(abilities.data ?? []); setManageOperations(true); }}>管理操作码</Button>
+              </Can>
+            </Space>
+          } extra="支持搜索内置操作码和业务操作码；内置执行协议固定，业务操作码可在此管理。保存时由后端校验模型兼容性。">
             <Select
               mode="tags"
-              placeholder="如 video.text_to_video / video.image_to_video"
+              placeholder="搜索或选择操作码，如 image.upscale / video.upscale"
+              showSearch
+              optionFilterProp="label"
+              options={modelOperationOptions(abilities.data ?? [], watchedOps ?? [])}
             />
+          </Form.Item>
+          {abilities.isError && (
+            <Alert type="error" showIcon title="业务能力加载失败" description={abilities.error.message}
+              action={<Button onClick={() => abilities.refetch()}>重试</Button>} style={{ marginBottom: 16 }} />
+          )}
+          <Form.Item
+            name="ability_codes"
+            label="业务能力"
+            extra="仅展示匹配操作码的已启用能力；已分配的停用能力会保留。默认模型须先在业务能力页面清除默认才能取消。"
+            dependencies={["operation_codes", "provider", "model", "version", "capability"]}
+            rules={[{
+              validator: (_, codes: string[] | undefined) => {
+                const incompatible = abilities.data?.find(ability => codes?.includes(ability.code)
+                  && !abilitySupportsModel(ability, execution, abilities.data));
+                return incompatible
+                  ? Promise.reject(new Error(`${incompatible.display_name} 需要兼容的模型与操作码 ${incompatible.operation_code}，请调整模型配置或取消该能力`))
+                  : Promise.resolve();
+              },
+            }]}
+          >
+            <ModelAbilitiesField abilities={abilities.data ?? []} assigned={detail.data?.ability_codes ?? []} model={execution} modelId={isEdit ? editId : 0} />
           </Form.Item>
           <Form.Item
             name="pricing"
@@ -547,6 +598,16 @@ export function ModelsPage() {
             ]}
           />
         </Form>
+      </Drawer>
+      <Drawer title="管理业务操作码" width="min(1100px, 96vw)" open={manageOperations} closable={!operationsBusy} maskClosable={!operationsBusy} keyboard={!operationsBusy}
+        onClose={async () => {
+          const refreshed = await abilities.refetch();
+          if (refreshed.isError) { message.error("操作码刷新失败，请重试后关闭"); return; }
+          form.setFieldValue("operation_codes", reconcileModelOperations(form.getFieldValue("operation_codes") ?? [], operationSnapshot, refreshed.data ?? [], form.getFieldValue("ability_codes") ?? []));
+          setManageOperations(false);
+        }} destroyOnHidden>
+        <Alert type="info" showIcon title="修改业务操作码与执行绑定后生效；内置操作码属于固定执行协议。" style={{marginBottom: 16}} />
+        <AbilitiesPage onBusyChange={setOperationsBusy} />
       </Drawer>
     </>
   );

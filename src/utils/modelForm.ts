@@ -15,6 +15,7 @@ export function modelFormValues(d: ModelVersion): ModelWriteBody {
     task_mode: d.task_mode,
     allowed_plans: d.allowed_plans,
     operation_codes: d.operation_codes,
+    ability_codes: d.ability_codes ?? [],
     pricing: d.pricing,
     params_schema: d.params_schema,
     result_schema: d.result_schema,

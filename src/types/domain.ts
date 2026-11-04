@@ -429,6 +429,7 @@ export interface ModelVersion extends MutableEntity {
   // admin 详情/写接口返回的结构化字段(catalog 形态)。
   allowed_plans?: string[];
   operation_codes?: string[];
+  ability_codes?: string[];
   pricing?: unknown;
   params_schema?: unknown;
   result_schema?: unknown;
@@ -537,4 +538,17 @@ export interface AgentStats {
   total_tokens: number;
   total_credits: number;
   total_artifacts: number;
+}
+
+// Business-facing capability catalog; code is stable, public operation and binding are editable.
+export interface BusinessAbility {
+  code: string;
+  display_name: string;
+  description: string;
+  enabled: boolean;
+  operation_code: string;
+  execution_operation_code: string;
+  tool_code: string;
+  tool_version: number;
+  default_model_version_id: number;
 }
