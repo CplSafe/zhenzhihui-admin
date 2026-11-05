@@ -21,6 +21,7 @@ import { ApiError } from "@/types/api";
 import type { AgentConfigView } from "@/types/domain";
 
 interface FormValues {
+  studio_chat_model: string;
   search_api_key?: string;
   // 勾选「清空 Key」→ 提交空串,后端据此清空。
   clear_search_api_key?: boolean;
@@ -42,6 +43,7 @@ export function AgentSettingsPage() {
   useEffect(() => {
     if (!data) return;
     form.setFieldsValue({
+      studio_chat_model: data.studio_chat_model || "qwen3.8-max",
       search_api_key: "",
       clear_search_api_key: false,
       chat_operation_code: data.chat_operation_code,
@@ -52,6 +54,7 @@ export function AgentSettingsPage() {
   const save = useMutation({
     mutationFn: (values: FormValues) =>
       updateAgentConfig({
+        studio_chat_model: values.studio_chat_model.trim(),
         // 不传 = 保留原 key;空串 = 清空;非空 = 覆盖。
         search_api_key: values.clear_search_api_key
           ? ""
@@ -99,6 +102,9 @@ export function AgentSettingsPage() {
         }
       >
         <Descriptions column={1} size="small">
+          <Descriptions.Item label="制剧推理模型">
+            <Mono>{data?.studio_chat_model || "qwen3.8-max"}</Mono>
+          </Descriptions.Item>
           <Descriptions.Item label="搜索 API Key">
             {data?.search_api_key_set ? (
               <Mono>{data.search_api_key_masked}</Mono>
@@ -122,6 +128,14 @@ export function AgentSettingsPage() {
           onFinish={(values) => save.mutate(values)}
           disabled={isFetching}
         >
+          <Form.Item
+            label="制剧推理模型"
+            name="studio_chat_model"
+            rules={[{ required: true, whitespace: true, message: "请输入模型标识" }, { max: 128 }]}
+            extra="默认 qwen3.8-max。填写模型目录中的 model 标识；目前需使用 Chat Completions 兼容供应商，支持 agent.chat 和工具调用，并对用户套餐开放。更改后新一轮生效，暂停的轮次保留原模型。"
+          >
+            <Input placeholder="qwen3.8-max" maxLength={128} />
+          </Form.Item>
           <Form.Item
             label="搜索 API Key(博查)"
             name="search_api_key"

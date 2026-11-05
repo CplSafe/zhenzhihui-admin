@@ -458,6 +458,7 @@ export interface Overview {
 // 智能体配置脱敏视图,对应 settings.AgentConfigView。
 // 与 provider 凭证同一原则:永不回明文 key,只有掩码 + 是否已配置。
 export interface AgentConfigView {
+  studio_chat_model?: string;
   search_api_key_set: boolean;
   search_api_key_masked?: string;
   chat_operation_code: string;

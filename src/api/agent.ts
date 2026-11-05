@@ -13,6 +13,7 @@ export const getAgentConfig = () =>
   http.get<AgentConfigView>("/admin/settings/agent");
 
 export interface AgentConfigUpdateBody {
+  studio_chat_model?: string;
   // 不传 = 保留原 key;空串 = 清空;非空 = 覆盖。与 provider 凭证同一语义。
   search_api_key?: string;
   chat_operation_code?: string;
