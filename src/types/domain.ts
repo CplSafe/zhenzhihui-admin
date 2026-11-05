@@ -352,6 +352,7 @@ export interface Pricing {
   provider_cost_fx_date?: string;
   provider_cost_cents_per_extra_input_image?: number;
   input_credit_rate?: number;
+  cached_input_credit_rate?: number;
   output_credit_rate?: number;
   provider_concurrency_limit?: number;
   unit?: string;

@@ -35,6 +35,7 @@ interface PricingFieldProps {
 const COMMON_KEYS = [
   "unit",
   "input_credit_rate",
+  "cached_input_credit_rate",
   "output_credit_rate",
   "hold_credits_per_second",
   "credits_per_thousand_tokens_by_tier",
@@ -141,6 +142,7 @@ function PricingEditor({
   const setRate = (
     key:
       | "input_credit_rate"
+      | "cached_input_credit_rate"
       | "output_credit_rate"
       | "hold_credits_per_second"
       | "provider_cost_cents_per_million_tokens"
@@ -562,6 +564,24 @@ function PricingEditor({
             placeholder="如 8"
           />
         </label>
+        {capability === "responses" && (
+          <label style={{ display: "block", width: 240 }}>
+            <FieldLabel text="缓存输入单价(积分 / 千 token)" />
+            <InputNumber
+              min={0.001}
+              max={pricing.input_credit_rate}
+              precision={3}
+              step={0.001}
+              style={{ width: "100%" }}
+              value={pricing.cached_input_credit_rate}
+              onChange={(v) => setRate("cached_input_credit_rate", v)}
+              placeholder="留空沿用普通输入价"
+            />
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              OpenAI 及兼容文本接口；仅按实际缓存命中用量计价，须大于 0 且不高于普通输入价。
+            </Typography.Text>
+          </label>
+        )}
       </Space>
 
       <Typography.Paragraph
