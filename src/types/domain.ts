@@ -390,9 +390,14 @@ export interface Pricing {
 }
 
 // 限时优惠,对应 catalog.PromoPricing。
-// 窗口内覆盖 credits_per_billable_second_by_resolution;到期自动失效,
-// 不需要人工改回(这正是它存在的意义——避免活动结束后继续按折扣价亏本卖)。
+// 共用活动时间窗口；支持视频秒价及文本输入、输出、缓存价格。
+// 到期恢复常规价，或由 require_price_review_after_end 配置暂停新调用。
 export interface PromoPricing {
+  input_credit_rate?: number;
+  output_credit_rate?: number;
+  cached_input_credit_rate?: number;
+  provider_cost_cents_per_million_tokens_by_usage?: Record<string, number>;
+  require_price_review_after_end?: boolean;
   // 活动文案,前端直接展示(如「限时 4 折」)。
   label?: string;
   // 活动起止时间(RFC3339,带时区)。留空表示该侧不限。

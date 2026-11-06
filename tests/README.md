@@ -31,3 +31,7 @@ payloads, disabled assigned
 abilities, explicit `ability_codes: []`, default-detach protection, read-only
 permissions, UTF-8 validation, enable/disable, error retry and responsive layout. Screenshots go to `output/playwright/`.
 No real configuration or model execution requests are made.
+
+## Text promotion browser checks
+
+Run `playwright-cli run-code --filename tests/textPromotion.browser.js` against the local dev server. It checks standard and promotional input/output/cache costs, ordinary text credit rates, end-only activity windows, price-review flags, cancellation, mobile overflow and the existing video promotion editor. Only the isolated local pricing fixture is used; no live configuration or provider calls.

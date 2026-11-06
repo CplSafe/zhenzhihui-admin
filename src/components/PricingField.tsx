@@ -4,10 +4,12 @@ import { MediaCostPricingField } from "@/components/MediaCostPricingField";
 import { useState } from "react";
 import {
   Collapse,
+  Button,
   DatePicker,
   Input,
   InputNumber,
   Select,
+  Switch,
   Space,
   Table,
   Typography,
@@ -92,14 +94,25 @@ function FieldLabel({ text }: { text: string }) {
   );
 }
 
+const TEXT_TOKEN_COST_FIELDS = [
+  { key: "input", title: "普通输入" },
+  { key: "cached_input", title: "缓存读取" },
+  { key: "cache_write_30m", title: "缓存写入 30 分钟" },
+  { key: "cache_write_12h", title: "缓存写入 12 小时" },
+  { key: "output", title: "输出" },
+];
+
+const textUsageCostModel = (provider?: string, version?: string, capability?: string) =>
+  capability === "responses" && provider === "openai" && !!version && /^(gpt-5\.6)(-sol|-terra|-luna)?$/.test(version);
+
 export function PricingField(props: PricingFieldProps) {
   const p = props.value ?? {};
   const isUSD = p.provider_cost_currency === "USD";
   const fx = props.exchangeRate;
   const effective = isUSD ? { ...p, provider_cost_to_cny_ppm: fx?.rate_ppm || undefined, provider_cost_fx_source: fx?.source, provider_cost_fx_date: fx?.rate_date } : p;
   return <>
-    <Alert style={{ marginBottom: 12 }} type="info" showIcon title={p.unit === 'provider_cost' ? '按上游成本折算积分' : '按配置积分单价计费'}
-      description={p.unit === 'provider_cost' ? '实际用量 × 上游单价 × 统一汇率 ÷ 0.02，完成后按实际用量多退少补。' : '以下积分单价是实际扣费配置；上游成本用于经营分析。计费单位以各项标注为准。'} />
+    <Alert style={{ marginBottom: 12 }} type="info" showIcon title={(p.unit === 'provider_cost' || textUsageCostModel(props.provider, props.version, props.capability)) ? '按上游成本折算积分' : '按配置积分单价计费'}
+      description={(p.unit === 'provider_cost' || textUsageCostModel(props.provider, props.version, props.capability)) ? '实际用量 × 上游单价 × 统一汇率 ÷ 0.02，完成后按实际用量多退少补。' : '以下积分单价是实际扣费配置；上游成本用于经营分析。计费单位以各项标注为准。'} />
     {isUSD && <p>统一美元汇率：{fx?.rate_ppm ? (fx.rate_ppm / 1_000_000).toFixed(6) : '等待同步'} · {fx?.rate_date || '暂无日期'} · {fx?.usable ? '有效' : '美元新请求暂停'}</p>}
     <PricingEditor {...props} value={effective} />
   </>;
@@ -115,6 +128,8 @@ function PricingEditor({
 }: PricingFieldProps) {
   const pricing: Pricing = value ?? {};
   const isVideo = capability === "video";
+  const isText = capability === "responses";
+  const usageCostText = textUsageCostModel(provider, version, capability);
   const googleSpec = googleImageSpec(provider, version, capability);
   const isLegacyGoogle = provider === "google" && capability === "image" && version === "gemini-2.5-flash-image";
   const tierTable = pricing.credits_per_thousand_tokens_by_tier ?? {};
@@ -210,7 +225,7 @@ function PricingEditor({
   const promo = pricing.promo;
   const promoTable = promo?.credits_per_billable_second_by_resolution ?? {};
   const promoActive = (() => {
-    if (!promo || Object.keys(promoTable).length === 0) return false;
+    if (!promo || !(Object.keys(promoTable).length || Object.keys(promo.provider_cost_cents_per_million_tokens_by_usage ?? {}).length || [promo.input_credit_rate, promo.output_credit_rate, promo.cached_input_credit_rate].some(v => v !== undefined))) return false;
     const now = dayjs();
     if (promo.starts_at && now.isBefore(dayjs(promo.starts_at))) return false;
     if (promo.ends_at && !now.isBefore(dayjs(promo.ends_at))) return false;
@@ -220,15 +235,8 @@ function PricingEditor({
   // 整体改写 promo;传 undefined 表示清除活动(恢复刊例价)。
   const emitPromo = (next: PromoPricing | undefined) => {
     const nextPricing: Pricing = { ...pricing };
-    if (
-      !next ||
-      Object.keys(next.credits_per_billable_second_by_resolution ?? {})
-        .length === 0
-    ) {
-      delete nextPricing.promo;
-    } else {
-      nextPricing.promo = next;
-    }
+    if (!next) delete nextPricing.promo;
+    else nextPricing.promo = next;
     emit(nextPricing);
   };
 
@@ -242,17 +250,42 @@ function PricingEditor({
     });
   };
 
+  const renderTextCostTable = (promotional: boolean) => {
+    const rates = (promotional ? promo : pricing)?.provider_cost_cents_per_million_tokens_by_usage ?? {};
+    const label = promotional ? "优惠成本" : "常规成本";
+    return <Table<{ key: string; title: string }>
+      size="small" pagination={false} rowKey="key" scroll={{ x: promotional ? 560 : 360 }}
+      dataSource={TEXT_TOKEN_COST_FIELDS}
+      columns={[
+        { title: "计费项目", dataIndex: "title", width: 150 },
+        ...(promotional ? [{ title: "常规成本（美分 / 百万 tokens）", render: (_: unknown, row: {key: string}) => pricing.provider_cost_cents_per_million_tokens_by_usage?.[row.key] ?? "—" }] : []),
+        {
+          title: label + "（美分 / 百万 tokens）",
+          render: (_, row) => <InputNumber
+            aria-label={row.title + label} min={1} max={1000000000} precision={0}
+            value={rates[row.key]} placeholder={promotional ? "留空沿用常规价" : "填写常规成本"}
+            onChange={value => {
+              const next = { ...rates };
+              if (value === null) delete next[row.key]; else next[row.key] = value;
+              if (promotional) emitPromo({ ...promo, provider_cost_cents_per_million_tokens_by_usage: next });
+              else emit({ ...pricing, provider_cost_cents_per_million_tokens_by_usage: next });
+            }}
+          />,
+        },
+      ]}
+    />;
+  };
+
   const renderPromo = () => (
     <div>
       <Typography.Paragraph
         type="secondary"
         style={{ fontSize: 12, marginBottom: 8 }}
       >
-        活动期间按下表单价计费(用户实扣折后价),
-        <strong>到期自动恢复上面的刊例价,不需要人工改回</strong>。
-        清空折后单价即取消活动。前端会展示「划线价 + 现价 + 倒计时」。
+        活动期间使用配置的优惠价，留空的项目沿用常规价；已提交任务按提交时价格结算。
+        到期默认恢复常规价；未确认常规价时，可开启“到期需复核价格”暂停新调用。
       </Typography.Paragraph>
-      <Space size="large" wrap style={{ marginBottom: 8 }}>
+      <Space size="large" wrap style={{ marginBottom: 8, maxWidth: "100%" }}>
         <label>
           <FieldLabel text="活动文案(前端展示)" />
           <Input
@@ -264,26 +297,28 @@ function PricingEditor({
             }
           />
         </label>
-        <label>
+        <label style={{ display: "block", maxWidth: "100%" }}>
           <FieldLabel text="活动起止时间(留空表示该侧不限)" />
-          <DatePicker.RangePicker
-            showTime
-            style={{ width: 380 }}
-            value={[
-              promo?.starts_at ? dayjs(promo.starts_at) : null,
-              promo?.ends_at ? dayjs(promo.ends_at) : null,
-            ]}
-            onChange={(range) =>
-              emitPromo({
-                ...promo,
-                starts_at: range?.[0]?.format() || undefined,
-                ends_at: range?.[1]?.format() || undefined,
-              })
-            }
-          />
+          <Space wrap>
+            {(["starts_at", "ends_at"] as const).map(key => <DatePicker
+              key={key} showTime needConfirm={false}
+              aria-label={key === "starts_at" ? "活动开始时间" : "活动结束时间"}
+              placeholder={key === "starts_at" ? "开始时间（可留空）" : "结束时间（可留空）"}
+              value={promo?.[key] ? dayjs(promo[key]) : null}
+              style={{ width: 210, maxWidth: "100%" }}
+              onChange={date => emitPromo({ ...promo, [key]: date?.format() || undefined })}
+            />)}
+          </Space>
         </label>
       </Space>
-      <Table<{ tier: string }>
+      {isText ? <>
+        <Space wrap size="large" style={{ marginBottom: 12 }}>
+          <label><FieldLabel text="到期需复核价格（暂停新调用）" /><Switch checked={promo?.require_price_review_after_end ?? false} onChange={checked => emitPromo({...promo, require_price_review_after_end: checked})} /></label>
+          <Button onClick={() => emitPromo(undefined)}>取消优惠活动</Button>
+        </Space>
+        {usageCostText ? renderTextCostTable(true)
+        : <Space wrap size="large">{(['input_credit_rate','cached_input_credit_rate','output_credit_rate'] as const).map(key=><label key={key}><FieldLabel text={({input_credit_rate:'普通输入',cached_input_credit_rate:'缓存读取',output_credit_rate:'输出'})[key] + '优惠价（积分 / 千 tokens）'} /><InputNumber min={key==='cached_input_credit_rate'?0.001:0} precision={3} value={promo?.[key]} placeholder="留空沿用常规价" onChange={v=>{const next={...promo};if(v===null)delete next[key];else next[key]=v;emitPromo(next);}}/></label>)}</Space>}
+      </> : <Table<{ tier: string }>
         size="small"
         pagination={false}
         rowKey="tier"
@@ -317,7 +352,7 @@ function PricingEditor({
             ),
           },
         ]}
-      />
+      />}
     </div>
   );
 
@@ -533,6 +568,10 @@ function PricingEditor({
   return (
     <div>
       {renderUnit()}
+      {usageCostText && <>
+        <Typography.Paragraph>按下表成本及统一汇率结算；积分单价仅作展示，优惠在下方“限时优惠”配置。</Typography.Paragraph>
+        {renderTextCostTable(false)}
+      </>}
       <Space size="large" wrap>
         <label>
           <FieldLabel text={pricing.unit === "thousand_characters" ? "输入单价(积分 / 千字符)" : isLegacyGoogle ? "输入单价（此模型须为 0）" : "输入单价(积分 / 千 token)"} />
@@ -541,6 +580,7 @@ function PricingEditor({
             precision={3}
             step={0.001}
             style={{ width: 220 }}
+            disabled={usageCostText}
             value={pricing.input_credit_rate}
             onChange={(v) => setRate("input_credit_rate", v)}
             placeholder="如 2"
@@ -559,6 +599,7 @@ function PricingEditor({
             precision={3}
             step={0.001}
             style={{ width: 240 }}
+            disabled={usageCostText}
             value={pricing.output_credit_rate}
             onChange={(v) => setRate("output_credit_rate", v)}
             placeholder="如 8"
@@ -573,6 +614,7 @@ function PricingEditor({
               precision={3}
               step={0.001}
               style={{ width: "100%" }}
+              disabled={usageCostText}
               value={pricing.cached_input_credit_rate}
               onChange={(v) => setRate("cached_input_credit_rate", v)}
               placeholder="留空沿用普通输入价"
@@ -588,7 +630,9 @@ function PricingEditor({
         type="secondary"
         style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
       >
-        {capability === "audio" ? (
+        {usageCostText ? (
+          <>输入、输出和缓存按各自成本档结算；预冻结与最终实扣以后台报价和上游实际用量为准。</>
+        ) : capability === "audio" ? (
           <>Seed Audio 按原始音频秒数结算，按 120 秒上限预冻；Seed TTS 按朗读字符数结算。供应商成本可在高级 JSON 配置 provider_cost_cents_per_minute（分/分钟）或 provider_cost_cents_per_ten_thousand_characters（分/万字符）。</>
         ) : isLegacyGoogle ? (
           <>固定售价：<Typography.Text strong>{fmtCredits(outRate)} 积分 / 张 = ¥{(Math.round(outRate * 1000) * 2 / 100_000).toFixed(2)} / 张</Typography.Text>。这是自定义售价，不是官方成本计费。</>
@@ -597,6 +641,7 @@ function PricingEditor({
         )}
       </Typography.Paragraph>
 
+      {isText && <Collapse ghost size="small" items={[{key:'promo',label:promoActive?'限时优惠（生效中）':'限时优惠',children:renderPromo()}]} />}
       {renderFinanceRates()}
       {renderAdvanced()}
     </div>
@@ -623,8 +668,7 @@ function PricingEditor({
           type="secondary"
           style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}
         >
-          经营分析无需配置：系统按模型 ID 自动匹配官方上游价格，固定按 1 积分 =
-          ¥0.02 计算收入；HappyHorse 使用本项目四折合同价。
+          {usageCostText ? "上述成本档用于实际结算，按统一汇率折算，1 积分 = ¥0.02。修改常规价后，已提交任务仍沿用原价格快照。" : "经营分析无需配置：系统按模型 ID 自动匹配官方上游价格，固定按 1 积分 = ¥0.02 计算收入；HappyHorse 使用本项目四折合同价。"}
         </Typography.Paragraph>
       </div>
     );
