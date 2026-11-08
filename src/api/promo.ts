@@ -197,3 +197,29 @@ export async function exportPromo(filters: PromoFilter) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(blobURL), 1000);
 }
+
+export interface PromoConfig {
+  entry_name: string;
+  enabled: boolean;
+  tag_enabled: boolean;
+  price_show: boolean;
+  offline_fallback: boolean;
+  sla_days: number;
+  rework_window_days: number;
+  rework_days: number;
+  base_rate: number;
+  multiplier_bps: number;
+  max_file_bytes: number;
+  max_total_bytes: number;
+  max_files: number;
+  wip_alert: number;
+  service_tel: string;
+  duration_options_seconds: number[];
+  ratio_options: string[];
+  resolution_options: string[];
+  allowed_mime: string[];
+  notify_to_admin_ids: number[];
+}
+export const getPromoConfig = () => http.get<PromoConfig>("/admin/promo/config");
+export const savePromoConfig = (config: PromoConfig) =>
+  http.put<PromoConfig>("/admin/promo/config", config);
