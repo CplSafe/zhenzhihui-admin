@@ -22,6 +22,8 @@ import type { AgentConfigView } from "@/types/domain";
 
 interface FormValues {
   studio_chat_model: string;
+  studio_default_skill: string;
+  studio_system_prompt: string;
   search_api_key?: string;
   // 勾选「清空 Key」→ 提交空串,后端据此清空。
   clear_search_api_key?: boolean;
@@ -44,6 +46,8 @@ export function AgentSettingsPage() {
     if (!data) return;
     form.setFieldsValue({
       studio_chat_model: data.studio_chat_model || "qwen3.8-max",
+      studio_default_skill: data.studio_default_skill || "shuohao-skills",
+      studio_system_prompt: data.studio_system_prompt || "",
       search_api_key: "",
       clear_search_api_key: false,
       chat_operation_code: data.chat_operation_code,
@@ -55,6 +59,8 @@ export function AgentSettingsPage() {
     mutationFn: (values: FormValues) =>
       updateAgentConfig({
         studio_chat_model: values.studio_chat_model.trim(),
+        studio_default_skill: values.studio_default_skill.trim(),
+        studio_system_prompt: values.studio_system_prompt,
         // 不传 = 保留原 key;空串 = 清空;非空 = 覆盖。
         search_api_key: values.clear_search_api_key
           ? ""
@@ -132,10 +138,12 @@ export function AgentSettingsPage() {
             label="制剧推理模型"
             name="studio_chat_model"
             rules={[{ required: true, whitespace: true, message: "请输入模型标识" }, { max: 128 }]}
-            extra="默认 qwen3.8-max。填写模型目录中的 model 标识；目前需使用 Chat Completions 兼容供应商，支持 agent.chat 和工具调用，并对用户套餐开放。更改后新一轮生效，暂停的轮次保留原模型。"
+            extra="默认 qwen3.8-max。填写模型目录中的 model 标识；需支持 agent.chat 以及已接入的工具调用协议，并对用户套餐开放。更改后新一轮生效，暂停的轮次保留原模型。"
           >
             <Input placeholder="qwen3.8-max" maxLength={128} />
           </Form.Item>
+          <Form.Item label="默认 Skill" name="studio_default_skill" rules={[{required:true,whitespace:true},{max:128}]} extra="填写后台已发布 Skill 名称。用户未选 Skill 时使用；不会把私有正文展示给用户。"><Input/></Form.Item>
+          <Form.Item label="Agent 系统提示词" name="studio_system_prompt" rules={[{max:16000}]} extra="由业务后端注入所有新的 agent.chat 请求，与模型级提示词、运行规则及按需 Skill 一起生效。清空则不注入此段。已受理任务恢复使用原快照，避免修改旧请求或重复扣费。"><Input.TextArea rows={12} showCount maxLength={16000}/></Form.Item>
           <Form.Item
             label="搜索 API Key(博查)"
             name="search_api_key"

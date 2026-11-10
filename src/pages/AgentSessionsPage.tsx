@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Tabs } from "antd";
+import { AgentTracesPage } from "./AgentTracesPage";
 import {
   Alert,
   Button,
@@ -103,7 +105,7 @@ function MessageList({ messages }: { messages: AgentMessage[] }) {
   );
 }
 
-export function AgentSessionsPage() {
+function LegacyAgentSessionsPage() {
   const [filters, setFilters] = useState<Filters>({});
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -377,3 +379,5 @@ export function AgentSessionsPage() {
     </>
   );
 }
+
+export function AgentSessionsPage() { return <Tabs items={[{key:"dodo",label:"DoDo Agent 会话",children:<AgentTracesPage/>},{key:"legacy",label:"历史智能体会话",children:<LegacyAgentSessionsPage/>}]}/>; }

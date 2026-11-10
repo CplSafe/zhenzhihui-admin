@@ -14,6 +14,8 @@ export const getAgentConfig = () =>
 
 export interface AgentConfigUpdateBody {
   studio_chat_model?: string;
+  studio_default_skill?: string;
+  studio_system_prompt?: string;
   // 不传 = 保留原 key;空串 = 清空;非空 = 覆盖。与 provider 凭证同一语义。
   search_api_key?: string;
   chat_operation_code?: string;
