@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Button, Collapse, Descriptions, Drawer, InputNumber, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { http } from '@/api/client';
-import { normalizeAgentArchive } from '@/utils/agentArchive';
+import { normalizeAgentArchive, checkpointCounts } from '@/utils/agentArchive';
 
 type RecordValue = Record<string, unknown>;
 interface Trace { id: number; workspace_id: number; user_id: number; run_id: string; previous_run_id?: string; title: string; status: string; }
@@ -64,7 +64,7 @@ function TraceDetail({ trace }: { trace: Trace }) {
         <Collapse items={[
           {key:'run',label:'会话配置、历史上下文与待确认状态',children:<Json value={snapshot.run}/>},
           ...Object.entries(snapshot.tables).map(([name,rows])=>({key:name,label:`${name} · ${rows.length} 条`,children:<Json value={rows}/>})),
-          {key:'checkpoint',label:'恢复检查点',children:<Typography.Text>{Object.entries(snapshot.checkpoint_tables).map(([key,rows])=>`${key}: ${rows.length} 条`).join('；')}（原始二进制已归档，不在页面执行）</Typography.Text>},
+          {key:'checkpoint',label:'恢复检查点',children:<Typography.Text>{Object.entries(checkpointCounts(snapshot.checkpoint_tables)).map(([key,count])=>`${key}: ${count} 条`).join('；')}（原始二进制已归档，不在页面执行）</Typography.Text>},
         ]}/>
       </> : <Typography.Text type="secondary">暂无完整归档。</Typography.Text>},
     ]}/>
