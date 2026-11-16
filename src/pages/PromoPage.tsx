@@ -60,6 +60,7 @@ import {
   promoStates,
 } from "@/utils/promo";
 import { PromoConfigButton } from "./PromoConfigButton";
+import { ProductionNotifyButton } from "@/components/ProductionNotifyButton";
 import "./promo.css";
 const stateLabel = (s: string) =>
   promoStates.find((v) => v.value === s)?.label ?? s;
@@ -235,6 +236,7 @@ export function PromoPage() {
           <Space orientation="vertical" size={16} style={{ width: "100%" }}>
             <Space wrap size={24} aria-label="制作统计">
               <PromoConfigButton />
+              <ProductionNotifyButton />
               {(["submitted", "working", "rework", "overdue"] as const).map(
                 (k, i) => (
                   <span key={k}>

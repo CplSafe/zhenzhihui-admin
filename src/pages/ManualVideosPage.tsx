@@ -1,3 +1,4 @@
+import { ProductionNotifyButton } from "@/components/ProductionNotifyButton";
 import { useEffect, useRef, useState } from 'react';
 import { Alert, App, Button, Descriptions, Drawer, Empty, Form, Input, Modal, Progress, Select, Space, Spin, Tag, Typography, Upload } from 'antd';
 import type { TableColumnsType } from 'antd';
@@ -34,7 +35,7 @@ export function ManualVideosPage() {
     { title: '操作', width: 100, fixed: 'right', render: (_, task) => <Button type="link" onClick={() => setActiveID(task.id)}>查看任务</Button> },
   ];
   return <>
-    <ListPageShell<AITask> title="人工视频制作" titleLevel={1} filters={<Space wrap>
+    <ListPageShell<AITask> title="人工视频制作" titleLevel={1} filters={<Space wrap><ProductionNotifyButton />
       <Select aria-label="制作状态" value={filters.status} placeholder="全部状态" allowClear style={{ width: 160 }} options={manualVideoStates} onChange={status => setFilters({ status })} />
       <Button loading={list.loading} onClick={() => void list.refetch()}>刷新任务</Button>
       <Typography.Text type="secondary">失败或取消会全额退还本次积分，已结束任务不能覆盖结果。</Typography.Text>
