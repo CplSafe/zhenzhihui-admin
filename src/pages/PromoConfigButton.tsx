@@ -81,6 +81,7 @@ function ConfigForm() {
         title="单价按积分/秒填写；总价 = 单价 × 时长 × 总价系数。保存后新订单使用新规则，已有订单保留快照。"
         style={{ marginBottom: 16 }}
       />
+      <Alert type="info" title="素材不限格式、大小和数量，可不上传素材直接下单。" style={{ marginBottom: 16 }} />
       {!canSave && (
         <Typography.Paragraph type="secondary">
           当前账号仅可查看，保存需要系统设置权限。
@@ -133,7 +134,6 @@ function ConfigForm() {
           ["sla_days", "首次交付（自然日）", 1, 60],
           ["rework_window_days", "交付后可申请返工（自然日）", 1, 30],
           ["rework_days", "返工期限（首次交付日后自然日）", 1, 30],
-          ["max_files", "最大素材数量", 3, 500],
           ["wip_alert", "在制订单提醒阈值", 1, Number.MAX_SAFE_INTEGER],
         ] as const
       ).map(([name, label, min, max]) => (
@@ -146,39 +146,6 @@ function ConfigForm() {
           <InputNumber min={min} max={max} precision={0} />
         </Form.Item>
       ))}
-      <Form.Item
-        name="max_file_bytes"
-        label="单文件上限（字节，1073741824 = 1 GiB）"
-        rules={[{ required: true }]}
-      >
-        <InputNumber
-          min={1}
-          max={5 * 2 ** 30}
-          precision={0}
-          style={{ width: "100%" }}
-        />
-      </Form.Item>
-      <Form.Item
-        name="max_total_bytes"
-        label="总素材上限（字节，10737418240 = 10 GiB）"
-        dependencies={["max_file_bytes"]}
-        rules={[
-          { required: true },
-          {
-            validator: (_, value) =>
-              value < form.getFieldValue("max_file_bytes")
-                ? Promise.reject(new Error("总上限不能小于单文件上限"))
-                : Promise.resolve(),
-          },
-        ]}
-      >
-        <InputNumber
-          min={1}
-          max={50 * 2 ** 30}
-          precision={0}
-          style={{ width: "100%" }}
-        />
-      </Form.Item>
       <Form.Item
         name="duration_options_seconds"
         label="可选时长（秒，60–600）"
@@ -227,28 +194,6 @@ function ConfigForm() {
         <Select
           mode="multiple"
           options={["720P", "1080P", "2K", "4K"].map((value) => ({ value }))}
-        />
-      </Form.Item>
-      <Form.Item
-        name="allowed_mime"
-        label="允许的素材格式（MIME）"
-        rules={[{ required: true, type: "array", min: 1 }]}
-      >
-        <Select
-          mode="multiple"
-          options={[
-            "video/mp4",
-            "video/quicktime",
-            "video/webm",
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "application/pdf",
-            "text/plain",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "audio/mpeg",
-            "audio/wav",
-          ].map((value) => ({ value }))}
         />
       </Form.Item>
       <Form.Item

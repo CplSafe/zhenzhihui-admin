@@ -202,8 +202,8 @@ export function PromoPage() {
             {v === "offline_registered"
               ? "线下已交接"
               : v === "ready"
-                ? "素材齐备"
-                : v}
+                ? "已上传素材"
+                : v === "not_provided" ? "未上传素材" : v}
           </span>
           {o.low_resolution && <Tag color="warning">含低于1080P</Tag>}
         </Space>
