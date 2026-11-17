@@ -24,7 +24,7 @@ import { Credits, Mono } from "@/components/cells";
 import { usePagedList } from "@/hooks/usePagedList";
 import { getUser, listUsers } from "@/api/queries";
 import { listPlans } from "@/api/plans";
-import { adjustCredits, grantPlan } from "@/api/grants";
+import { adjustCredits, grantPlan, createTeamGrant } from "@/api/grants";
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
 import type {
@@ -104,6 +104,7 @@ export function UsersPage() {
       />
 
       <UserDetailDrawer
+        key={activeUserId ?? "closed"}
         userId={activeUserId}
         onClose={() => setActiveUserId(null)}
       />
@@ -125,6 +126,7 @@ function UserDetailDrawer({
   const [grantTarget, setGrantTarget] = useState<UserWorkspaceItem | null>(
     null,
   );
+  const [creatingTeam, setCreatingTeam] = useState(false);
   const [creditTarget, setCreditTarget] = useState<UserWorkspaceItem | null>(
     null,
   );
@@ -174,6 +176,9 @@ function UserDetailDrawer({
             <Typography.Text strong>
               工作空间({detail.data.workspace_count})
             </Typography.Text>
+            <Can permission={Permission.GRANTS_WRITE}>
+              <Button onClick={() => setCreatingTeam(true)}>新增团队并授予套餐</Button>
+            </Can>
             {detail.data.workspaces.map((w) => (
               <Card
                 key={w.workspace.id}
@@ -225,6 +230,19 @@ function UserDetailDrawer({
         )}
       </Drawer>
 
+      {creatingTeam && userId !== null && (
+        <GrantPlanModal
+          key={userId}
+          target={null}
+          newTeamUserId={userId}
+          onClose={() => setCreatingTeam(false)}
+          onDone={() => {
+            message.success("已新增团队并授予套餐");
+            setCreatingTeam(false);
+            refresh();
+          }}
+        />
+      )}
       <GrantPlanModal
         target={grantTarget}
         onClose={() => setGrantTarget(null)}
@@ -249,26 +267,31 @@ function UserDetailDrawer({
 
 function GrantPlanModal({
   target,
+  newTeamUserId,
   onClose,
   onDone,
 }: {
   target: UserWorkspaceItem | null;
+  newTeamUserId?: number;
   onClose: () => void;
   onDone: () => void;
 }) {
   const { message } = App.useApp();
-  const [form] = Form.useForm<{ plan_id: number; grant_credits: boolean }>();
+  const [form] = Form.useForm<{ plan_id: number; grant_credits: boolean; name?: string }>();
+  const open = target !== null || newTeamUserId !== undefined;
 
   // 拉套餐列表供选择(仅在打开时)。
   const plans = useQuery<Plan[], ApiError>({
     queryKey: ["admin", "plans"],
     queryFn: listPlans,
-    enabled: target !== null,
+    enabled: open,
   });
 
   const mut = useMutation({
-    mutationFn: (v: { plan_id: number; grant_credits: boolean }) =>
-      grantPlan(target!.workspace.id, v),
+    mutationFn: (v: { plan_id: number; grant_credits: boolean; name?: string }) =>
+      newTeamUserId !== undefined
+        ? createTeamGrant(newTeamUserId, { ...v, name: v.name!.trim() })
+        : grantPlan(target!.workspace.id, v),
     onSuccess: onDone,
     onError: (e: unknown) =>
       message.error(e instanceof ApiError ? e.message : "授予失败"),
@@ -276,19 +299,30 @@ function GrantPlanModal({
 
   return (
     <Modal
-      title={`授予套餐 → 空间 #${target?.workspace.id ?? ""}`}
-      open={target !== null}
-      onCancel={onClose}
-      onOk={() => form.submit()}
+      title={newTeamUserId !== undefined ? "新增团队并授予套餐" : `授予套餐 → ${target?.workspace.name ?? ""} #${target?.workspace.id ?? ""}`}
+      open={open}
+      onCancel={() => { if (!mut.isPending) onClose(); }}
+      onOk={() => { if (!mut.isPending) form.submit(); }}
       confirmLoading={mut.isPending}
+      cancelButtonProps={{ disabled: mut.isPending }}
       destroyOnHidden
     >
       <Form
         form={form}
+        preserve={false}
+        disabled={mut.isPending}
         layout="vertical"
         initialValues={{ grant_credits: true }}
         onFinish={(v) => mut.mutate(v)}
       >
+        {newTeamUserId !== undefined && (
+          <Form.Item name="name" label="团队名称" rules={[
+            { required: true, whitespace: true, message: "请输入团队名称" },
+            { validator: (_, value: string) => !value || [...value.trim()].length <= 128 ? Promise.resolve() : Promise.reject(new Error("团队名称不能超过 128 字符")) },
+          ]}>
+            <Input placeholder="填写新团队的名称" />
+          </Form.Item>
+        )}
         <Form.Item
           name="plan_id"
           label="套餐"
@@ -297,7 +331,7 @@ function GrantPlanModal({
           <Select
             loading={plans.isFetching}
             placeholder="选择要授予的套餐"
-            options={(plans.data ?? []).map((p) => ({
+            options={(plans.data ?? []).filter((p) => p.status === "enabled").map((p) => ({
               value: p.id,
               label: `${p.name}(${p.code})· 赠 ${fmtCredits(p.base_credits)} 积分`,
             }))}
