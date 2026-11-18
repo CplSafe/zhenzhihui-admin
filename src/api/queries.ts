@@ -5,6 +5,7 @@ import type {
   AdminAuditLog,
   AdminUserDetail,
   AdminWalletItem,
+  CanvasUsagePage,
   CreditLedger,
   ListPage,
   Overview,
@@ -77,6 +78,8 @@ export const getWorkspace = (id: number) =>
   http.get<unknown>(`/admin/workspaces/${id}`);
 export const getWorkspaceUsageSummary = (id: number) =>
   http.get<UsageSummary>(`/admin/workspaces/${id}/usage-summary`);
+export const listWorkspaceCanvasUsage = (id: number, params: Paginated & { month?: string }) =>
+  http.get<CanvasUsagePage>(`/admin/workspaces/${id}/canvas-usage${qs(params)}`);
 export const listWorkspaceMembers = (id: number) =>
   http.get<unknown[]>(`/admin/workspaces/${id}/members`);
 export const listWorkspaceMemberStatistics = (id: number) =>
