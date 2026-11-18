@@ -55,6 +55,7 @@ export function CanvasUsagePanel({ workspaceId }: { workspaceId: number }) {
       }
     >
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+        <Alert type="info" showIcon description="仅统计已关联画布的实际扣费，包含重试，不含冻结。复制或引用素材不重复计费；旧任务未记录画布归属时不计入，显示 0 不代表素材从未产生费用。" />
         {query.error && (
           <Alert
             type="error"
