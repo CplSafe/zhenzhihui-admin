@@ -104,6 +104,8 @@ export interface CanvasUsage {
 }
 
 export interface CanvasUsagePage {
+  workspace_total_used_credits?: number;
+  unassigned_used_credits?: number;
   items: CanvasUsage[];
   total: number;
   total_used_credits: number;

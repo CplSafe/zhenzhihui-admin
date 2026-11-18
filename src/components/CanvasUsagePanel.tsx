@@ -30,6 +30,10 @@ const canvasColumns: TableColumnsType<CanvasUsage> = [
 ]
 
 export function CanvasUsagePanel({ workspaceId }: { workspaceId: number }) {
+  return <CanvasUsageContent key={workspaceId} workspaceId={workspaceId} />
+}
+
+function CanvasUsageContent({ workspaceId }: { workspaceId: number }) {
   const [page, setPage] = useState(1)
   const [month, setMonth] = useState('')
   const query = useQuery({
@@ -56,7 +60,7 @@ export function CanvasUsagePanel({ workspaceId }: { workspaceId: number }) {
       }
     >
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-        <Alert type="info" showIcon description="总额包含可核实归属的历史实际扣费、重试，不含冻结。缺少节点明细的历史费用按历史使用成员均分（含已离开成员），单独标注历史分摊，不代表个人实际操作金额。复制或引用素材不重复计费；无法核实画布归属的费用不重复计入各画布。" />
+        <Alert type="info" showIcon description="团队总消耗按全部实际扣费流水汇总，等于已归属画布加历史未分配；包含重试，不含冻结。缺少节点明细的历史费用按历史使用成员均分（含已离开成员），单独标注历史分摊，不代表个人实际操作金额。复制或引用素材不重复计费；无法核实画布归属的消费列入“历史未分配”，不会重复计入各画布。" />
         {query.error && (
           <Alert
             type="error"
@@ -68,7 +72,13 @@ export function CanvasUsagePanel({ workspaceId }: { workspaceId: number }) {
         )}
         {data && (
           <div>
-            {month || '累计'}已结算 <Credits value={data.total_used_credits} /> 积分
+            {data.workspace_total_used_credits != null && data.unassigned_used_credits != null ? (
+              <Space wrap size={24} aria-label="团队消耗对账">
+                <span>团队{month || '累计'}总消耗：<Credits value={data.workspace_total_used_credits} /> 积分</span>
+                <span>已归属画布：<Credits value={data.total_used_credits} /> 积分</span>
+                <span>历史未分配：<Credits value={data.unassigned_used_credits} /> 积分</span>
+              </Space>
+            ) : <>已归属画布：<Credits value={data.total_used_credits} /> 积分</>}
           </div>
         )}
         <Table<CanvasUsage>
