@@ -1,7 +1,9 @@
 async (page) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  let readonly = false, fail = false;
+  let readonly = false, fail = false, holdSync = false;
+  const releases = {};
+  const syncCalls = [];
   const writes = [];
   const config = { source: 'volcengine', account_label: '独立账单测试账号', products: ['ark'], local_providers: ['volcengine'], exclusive: true, configured: true };
   const snapshot = { config, products: [{code:'ark',name:'方舟',currency:'CNY',gross:'12.500001',payable:'10.000001',rows:2},{code:'ecs',name:'云服务器',currency:'CNY',gross:'100',payable:'80',rows:1}],gross:'12.500001',payable:'10.000001',local_estimate:'9.000000',difference:'1.000001',task_count:4,unknown_cost_count:0,pending_count:0,failed_count:0,comparable:true };
@@ -11,7 +13,14 @@ async (page) => {
     if(path.endsWith('/admin/session')) data={admin_user:{id:1,status:'active'},roles:[],permissions: readonly ? ['admin.billing.read'] : ['admin.billing.read','admin.settings.read','admin.settings.write']};
     else if(path.endsWith('/settings/billing')) data=[config,{...config,source:'aliyun',products:[],local_providers:['bailian'],configured:false}];
     else if(req.method()==='PUT') { writes.push(req.postDataJSON()); data=config; }
-    else if(path.endsWith('/sync')) {fail=true;return route.fulfill({status:502,json:{code:10001,message:'账单查询失败，请检查权限'}});}
+    else if(path.endsWith('/sync')) {
+      if (holdSync) {
+        const source = path.split('/').at(-2);
+        syncCalls.push(source);
+        await new Promise(resolve => { releases[source] = resolve; });
+        return route.fulfill({json:{code:0,data:[]}});
+      }
+      fail=true;return route.fulfill({status:502,json:{code:10001,message:'账单查询失败，请检查权限'}});}
     else if(path.endsWith('/provider-bills')) data=[{source:'volcengine',month:'2026-10',status:fail?'failed':'synced',error:fail?'同步失败，已保留上次成功结果':'',synced_at:'2026-11-04T04:00:00Z',snapshot,provisional:false,config_changed:false},{source:'aliyun',month:'2026-10',status:'not_synced',snapshot:null,synced_at:null,provisional:false,config_changed:false}];
     else data={};
     return route.fulfill({json:{code:0,data}});
@@ -31,6 +40,22 @@ async (page) => {
   await page.getByRole('button',{name:/确\s*定/}).click();
   await page.getByText('配置已保存，请重新同步账单').waitFor();
   if(writes.length!==1 || 'access_key' in writes[0] || 'secret_key' in writes[0]) throw Error('Blank keys must be omitted');
+  holdSync = true;
+  const aliSync = page.getByRole('row').filter({hasText:'阿里云'}).getByRole('button',{name:/同\s*步/});
+  const volcSync = page.getByRole('row').filter({hasText:'火山引擎'}).getByRole('button',{name:/同\s*步/});
+  await aliSync.click();
+  await page.waitForFunction(() => [...document.querySelectorAll('tr')].find(r => r.textContent.includes('阿里云'))?.querySelectorAll('button')?.[1]?.disabled);
+  if (await volcSync.isDisabled()) throw Error('Synchronizing Aliyun disabled Volcengine');
+  await volcSync.click();
+  await page.waitForFunction(() => [...document.querySelectorAll('tr')].find(r => r.textContent.includes('火山引擎'))?.querySelectorAll('button')?.[1]?.disabled);
+  await aliSync.evaluate(button => button.click());
+  if (syncCalls.length !== 2) throw Error('Duplicate vendor sync was submitted');
+  releases.aliyun();
+  await page.waitForFunction(() => ![...document.querySelectorAll('tr')].find(r => r.textContent.includes('阿里云'))?.querySelectorAll('button')?.[1]?.disabled);
+  if (!await volcSync.isDisabled()) throw Error('Aliyun completion cleared pending Volcengine');
+  releases.volcengine();
+  await page.waitForFunction(() => ![...document.querySelectorAll('tr')].find(r => r.textContent.includes('火山引擎'))?.querySelectorAll('button')?.[1]?.disabled);
+  holdSync = false;
   await page.getByRole('button',{name:/同\s*步/}).first().click();
   await page.getByText('火山引擎：同步失败，已保留上次成功结果').waitFor();
   await page.getByText('10.000001',{exact:true}).waitFor();

@@ -64,6 +64,40 @@ interface ConfigForm extends BillingConfigInput {
   clear_credentials?: boolean;
 }
 
+function VendorSyncButton({
+  source,
+  month,
+}: {
+  source: BillSource;
+  month: string;
+}) {
+  const { message } = App.useApp();
+  const qc = useQueryClient();
+  const sync = useMutation({
+    mutationFn: ({ source, period }: { source: BillSource; period: string }) =>
+      syncProviderBill(source, period),
+    onSuccess: () => {
+      void message.success("账单已同步，请核对范围及差额");
+    },
+    onError: (e: Error) => {
+      void message.error(e.message);
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["provider-bills"] });
+    },
+  });
+  return (
+    <Button
+      size="small"
+      loading={sync.isPending}
+      disabled={sync.isPending}
+      onClick={() => sync.mutate({ source, period: month })}
+    >
+      同步
+    </Button>
+  );
+}
+
 export function ProviderBillingPage() {
   const [month, setMonth] = useState(
     dayjs().subtract(1, "month").format("YYYY-MM"),
@@ -84,19 +118,6 @@ export function ProviderBillingPage() {
     queryKey: ["billing-configs"],
     queryFn: listBillingConfigs,
     enabled: has(Permission.SETTINGS_READ),
-  });
-  const sync = useMutation({
-    mutationFn: ({ source, period }: { source: BillSource; period: string }) =>
-      syncProviderBill(source, period),
-    onSuccess: () => {
-      void message.success("账单已同步，请核对范围及差额");
-    },
-    onError: (e: Error) => {
-      void message.error(e.message);
-    },
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ["provider-bills"] });
-    },
   });
   const save = useMutation({
     mutationFn: ({
@@ -217,14 +238,7 @@ export function ProviderBillingPage() {
             permission={[Permission.BILLING_READ, Permission.SETTINGS_WRITE]}
             mode="all"
           >
-            <Button
-              size="small"
-              loading={sync.isPending && sync.variables?.source === r.source}
-              disabled={sync.isPending}
-              onClick={() => sync.mutate({ source: r.source, period: month })}
-            >
-              同步
-            </Button>
+            <VendorSyncButton source={r.source} month={month} />
           </Can>
         </Space>
       ),
