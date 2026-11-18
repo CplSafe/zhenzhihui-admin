@@ -1,3 +1,4 @@
+import { CreateUserModal } from "@/components/CreateUserModal";
 import { UserHierarchyPanel } from "@/components/UserHierarchyPanel";
 import { useState } from "react";
 import {
@@ -55,6 +56,9 @@ const columns: TableColumnsType<User> = [
 ];
 
 export function UsersPage() {
+  const [creating, setCreating] = useState(false);
+  const queryClient = useQueryClient();
+  const { message } = App.useApp();
   const [keyword, setKeyword] = useState("");
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
 
@@ -84,10 +88,22 @@ export function UsersPage() {
 
   return (
     <>
+      {creating && (
+        <CreateUserModal onClose={() => setCreating(false)} onCreated={(user, existingIdentity) => {
+          setCreating(false);
+          setKeyword(user.mobile || "");
+          setActiveUserId(user.id);
+          void queryClient.invalidateQueries({ queryKey: ["admin-users-list"] });
+          void message.success(existingIdentity ? "已有认证账号已同步，原密码保持不变" : "账号已创建，可用初始密码登录");
+        }} />
+      )}
       <ListPageShell<User>
         title="用户管理"
         filters={
           <Space wrap>
+            <Can permission={[Permission.USERS_READ, Permission.USERS_CREATE]} mode="all">
+              <Button type="primary" onClick={() => setCreating(true)}>新增用户</Button>
+            </Can>
             <Input.Search
               allowClear
               placeholder="手机号 / 邮箱 / 昵称 / DeepAuth ID"

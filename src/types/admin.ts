@@ -53,6 +53,7 @@ export const Permission = {
  LOGS_LIVE: "admin.logs.live",
   OVERVIEW_READ: "admin.overview.read",
   USERS_READ: "admin.users.read",
+  USERS_CREATE: "admin.users.create",
   USERS_WRITE: "admin.users.write",
   WORKSPACES_READ: "admin.workspaces.read",
   TASKS_READ: "admin.tasks.read",
