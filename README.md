@@ -22,6 +22,14 @@ pnpm preview  # 预览构建产物
 开发态下 `/api` 与 `/auth` 由 Vite 代理到 `VITE_API_PROXY_TARGET`（默认 `http://localhost:8080`),
 改后端地址改 `.env.development`。
 
+## 测试环境发布
+
+测试后台使用 `npm run build:test`，配置来自已跟踪的 `.env.test`。不要把本地开发包或默认构建的 `dist/` 直接覆盖测试后台。
+
+`VITE_ZZH_REMOTE_ORIGIN` 与 `VITE_DEEPAUTH_REMOTE_ORIGIN` 会编译进登录回调的允许地址列表，并非只供开发代理使用。TEST 分别是 `https://zzh-dev.zhongdahengrui.com` 和 `https://zzh-auth.zhongdahengrui.com`；写成旧 IP 会导致回调退回首页、未写入登录 Cookie，表现为登录后又回到登录页。
+
+生产构建必须显式配置该环境真实的 HTTPS 域名；发布构建会拒绝空值、IP、localhost 或非 origin URL。生产环境不要使用 `.env.test`。部署后除了检查页面文件，还应核对 OAuth 回调路径可到达 `/auth/callback`，不能只把匿名 session 返回 401 当作登录验证通过。
+
 ## 认证与权限模型
 
 认证在 DeepAuth(auth 项目)完成,后台前端不存密码:

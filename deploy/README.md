@@ -1,3 +1,21 @@
+# 当前域名环境构建
+
+TEST 使用 `npm run build:test`，加载仓库内 `.env.test`，产物仅用于测试机 `124.174.95.225`。
+
+PRODUCTION 构建前，必须由部署环境提供与该环境 OAuth 回调一致的 HTTPS origin，例如：
+
+```bash
+VITE_ZZH_REMOTE_ORIGIN=https://business.example.com \
+VITE_DEEPAUTH_REMOTE_ORIGIN=https://auth.example.com \
+VITE_DEEPAUTH_API_BASE_URL=/deepauth npm run build
+```
+
+以上是占位域名，必须替换为目标环境已核实的地址。仓库历史 `.env.production` 的 IP 默认值不能用于当前发布；构建会拒绝它们。部署后需核对实际产物的登录回调路径，不能只以登录页返回 200 或匿名接口返回 401 判断登录正常。
+
+以下为旧 IP/端口部署档案，**不得用于当前 TEST 或 PRODUCTION 发布，也不要执行其中的数据库调整**。
+
+---
+
 # 部署说明(独立端口 8002)
 
 运营后台前端部署到服务器 `115.190.63.215`,独立 nginx 端口 **8002**,
@@ -36,7 +54,7 @@
 ```bash
 cd zhenzhihui-admin
 pnpm install
-pnpm build           # 产出 dist/
+pnpm build           # 历史示例；当前发布必须按本文顶部配置 HTTPS origins
 ```
 
 ### 2. 上传 dist 到服务器

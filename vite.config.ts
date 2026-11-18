@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import type { ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
+import { validateBuildAuth } from './scripts/build-auth'
 import { fileURLToPath, URL } from 'node:url'
 import type { IncomingMessage } from 'node:http'
 
@@ -9,8 +10,9 @@ import type { IncomingMessage } from 'node:http'
 //     这样所有响应(含 Set-Cookie)都回到 localhost 同源,OAuth Cookie 能建立。
 //   - 关键:把后端 / DeepAuth 返回的跳转 location(绝对地址)改写回 localhost,
 //     让整个 OAuth 流程闭环在本地,不会跳出到 115.190.63.215。
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  validateBuildAuth(command, mode, env)
   const businessTarget = env.VITE_ZZH_REMOTE_ORIGIN || 'http://localhost:9000'
   const deepAuthTarget = env.VITE_DEEPAUTH_REMOTE_ORIGIN || 'http://localhost:8080'
   const businessCallbackUrl = `${normalizeBaseUrl(businessTarget)}/auth/callback`
