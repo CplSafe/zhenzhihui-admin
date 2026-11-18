@@ -30,6 +30,7 @@ import { AdminUsersPage } from "@/pages/AdminUsersPage";
 import { PlansPage } from "@/pages/PlansPage";
 import { CreditPackagesPage } from "@/pages/CreditPackagesPage";
 import { ProvidersPage } from "@/pages/ProvidersPage";
+import { ProviderBillingPage } from "@/pages/ProviderBillingPage";
 import { AgentSessionsPage } from "@/pages/AgentSessionsPage";
 import { AgentSettingsPage } from "@/pages/AgentSettingsPage";
 import { LoginPage } from "@/pages/LoginPage";
@@ -67,6 +68,7 @@ const pageByKey: Record<string, ReactNode> = {
   feedbacks: <FeedbacksPage />,
   referral: <ReferralPage />,
   providers: <ProvidersPage />,
+  "provider-bills": <ProviderBillingPage />,
   "agent-sessions": <AgentSessionsPage />,
   "agent-settings": <AgentSettingsPage />,
   "admin-users": <AdminUsersPage />,
