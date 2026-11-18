@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { Input, Select, Space, Tag } from 'antd'
+import { Button, Drawer, Input, Select, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
+import { CanvasUsagePanel } from '@/components/CanvasUsagePanel'
+import { Can } from '@/components/Can'
+import { Permission } from '@/types/admin'
 import { ListPageShell } from '@/components/ListPageShell'
 import { Credits, Mono } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
@@ -68,6 +71,9 @@ interface Filters {
 export function CreditLedgersPage() {
   const [filters, setFilters] = useState<Filters>({})
 
+  const [usageWorkspace, setUsageWorkspace] = useState<number | null>(null)
+  const workspaceId = filters.workspace_id ?? 0
+
   const { items, loading, error, pagination } = usePagedList<
     CreditLedger,
     Filters
@@ -78,41 +84,62 @@ export function CreditLedgersPage() {
   })
 
   return (
-    <ListPageShell<CreditLedger>
-      title="积分流水"
-      filters={
-        <Space wrap>
-          <Input
-            allowClear
-            placeholder="workspace ID"
-            style={{ width: 140 }}
-            onChange={(e) =>
-              setFilters((f) => ({
-                ...f,
-                workspace_id: e.target.value ? Number(e.target.value) : undefined,
-              }))
-            }
-          />
-          <Select
-            allowClear
-            placeholder="类型"
-            style={{ width: 140 }}
-            options={[
-              { value: 'freeze', label: 'freeze 冻结' },
-              { value: 'settle', label: 'settle 结算' },
-              { value: 'release', label: 'release 释放' },
-              { value: 'credit', label: 'credit 入账' },
-            ]}
-            onChange={(v) => setFilters((f) => ({ ...f, kind: v }))}
-          />
-        </Space>
-      }
-      columns={columns}
-      dataSource={items}
-      rowKey="id"
-      loading={loading}
-      error={error}
-      pagination={pagination}
-    />
+    <>
+      <ListPageShell<CreditLedger>
+        title="积分流水"
+        filters={
+          <Space wrap>
+            <Input
+              allowClear
+              placeholder="workspace ID"
+              style={{ width: 140 }}
+              onChange={(e) =>
+                setFilters((f) => ({
+                  ...f,
+                  workspace_id: e.target.value ? Number(e.target.value) : undefined,
+                }))
+              }
+            />
+            <Select
+              allowClear
+              placeholder="类型"
+              style={{ width: 140 }}
+              options={[
+                { value: 'freeze', label: 'freeze 冻结' },
+                { value: 'settle', label: 'settle 结算' },
+                { value: 'release', label: 'release 释放' },
+                { value: 'credit', label: 'credit 入账' },
+              ]}
+              onChange={(v) => setFilters((f) => ({ ...f, kind: v }))}
+            />
+            <Can permission={Permission.BILLING_READ}>
+              <Button
+                disabled={!Number.isSafeInteger(workspaceId) || workspaceId <= 0}
+                onClick={() => setUsageWorkspace(workspaceId)}
+              >
+                查看画布用量
+              </Button>
+            </Can>
+          </Space>
+        }
+        columns={columns}
+        dataSource={items}
+        rowKey="id"
+        loading={loading}
+        error={error}
+        pagination={pagination}
+      />
+      <Drawer
+        title={`工作空间 #${usageWorkspace} · 画布用量`}
+        open={usageWorkspace !== null}
+        onClose={() => setUsageWorkspace(null)}
+        width={680}
+        destroyOnHidden
+      >
+        <Can permission={Permission.BILLING_READ}>
+          {usageWorkspace !== null && <CanvasUsagePanel key={usageWorkspace} workspaceId={usageWorkspace} />}
+        </Can>
+      </Drawer>
+    </>
   )
 }

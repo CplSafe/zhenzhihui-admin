@@ -88,6 +88,26 @@ export interface UsageSummary {
   missing_video_duration_count: number;
 }
 
+export interface CanvasMemberUsage {
+  user_id: number;
+  display_name: string;
+  used_credits: number;
+}
+
+export interface CanvasUsage {
+  canvas_id: number;
+  title: string;
+  deleted: boolean;
+  used_credits: number;
+  members: CanvasMemberUsage[];
+}
+
+export interface CanvasUsagePage {
+  items: CanvasUsage[];
+  total: number;
+  total_used_credits: number;
+}
+
 // 空间内单个成员的消耗/作品统计(本月 Asia/Shanghai + 累计),对应后端 admin.WorkspaceMemberStatItem。
 // 消耗积分只计 settle(结算),作品数只计 active。
 export interface WorkspaceMemberStat {

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { Button, Drawer, Input, Select, Space, Table, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { ListPageShell } from '@/components/ListPageShell'
+import { Can } from '@/components/Can'
+import { Permission } from '@/types/admin'
+import { CanvasUsagePanel } from '@/components/CanvasUsagePanel'
 import { UsageSummaryPanel } from '@/components/UsageSummaryPanel'
 import { Credits, Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
@@ -227,7 +230,14 @@ export function WorkspacesPage() {
         onClose={() => setSummaryWs(null)}
         destroyOnHidden
       >
-        {summaryWs && <UsageSummaryPanel scope="workspace" id={summaryWs.id} />}
+        {summaryWs && (
+          <Space orientation="vertical" size={16} style={{ width: '100%' }}>
+            <UsageSummaryPanel scope="workspace" id={summaryWs.id} />
+            <Can permission={Permission.BILLING_READ}>
+              <CanvasUsagePanel key={summaryWs.id} workspaceId={summaryWs.id} />
+            </Can>
+          </Space>
+        )}
       </Drawer>
       <Drawer
         title={statWs ? `成员统计 · ${statWs.name}` : '成员统计'}
