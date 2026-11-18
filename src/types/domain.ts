@@ -89,6 +89,7 @@ export interface UsageSummary {
 }
 
 export interface CanvasMemberUsage {
+  historical_allocated_credits?: number;
   user_id: number;
   display_name: string;
   used_credits: number;

@@ -10,7 +10,8 @@ const PAGE_SIZE = 20
 const memberColumns: TableColumnsType<CanvasMemberUsage> = [
   { title: '用户 ID', dataIndex: 'user_id', render: (id) => <Mono>{id}</Mono> },
   { title: '成员', dataIndex: 'display_name', render: (name) => name || '—' },
-  { title: '已结算积分', dataIndex: 'used_credits', align: 'right', render: (v) => <Credits value={v} /> },
+  { title: '消耗积分（含历史分摊）', dataIndex: 'used_credits', align: 'right', render: (v) => <Credits value={v} /> },
+  { title: '其中历史分摊', dataIndex: 'historical_allocated_credits', align: 'right', render: (v) => <Credits value={v ?? 0} /> },
 ]
 
 const canvasColumns: TableColumnsType<CanvasUsage> = [
@@ -55,7 +56,7 @@ export function CanvasUsagePanel({ workspaceId }: { workspaceId: number }) {
       }
     >
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-        <Alert type="info" showIcon description="仅统计已关联画布的实际扣费，包含重试，不含冻结。复制或引用素材不重复计费；旧任务未记录画布归属时不计入，显示 0 不代表素材从未产生费用。" />
+        <Alert type="info" showIcon description="总额包含可核实归属的历史实际扣费、重试，不含冻结。缺少节点明细的历史费用按历史使用成员均分（含已离开成员），单独标注历史分摊，不代表个人实际操作金额。复制或引用素材不重复计费；无法核实画布归属的费用不重复计入各画布。" />
         {query.error && (
           <Alert
             type="error"
