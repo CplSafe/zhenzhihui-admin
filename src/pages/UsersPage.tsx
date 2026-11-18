@@ -1,3 +1,4 @@
+import { UserHierarchyPanel } from "@/components/UserHierarchyPanel";
 import { useState } from "react";
 import {
   App,
@@ -172,6 +173,8 @@ function UserDetailDrawer({
                 {fmtTime(detail.data.user.created_at)}
               </Descriptions.Item>
             </Descriptions>
+
+            {userId !== null && <UserHierarchyPanel userId={userId} />}
 
             <Typography.Text strong>
               工作空间({detail.data.workspace_count})
