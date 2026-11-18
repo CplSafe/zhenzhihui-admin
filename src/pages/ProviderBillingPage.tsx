@@ -48,6 +48,7 @@ const providers = {
 };
 const statusLabels: Record<string, string> = {
   not_synced: "未同步",
+  scope_changed: "需重新同步模型账单",
   interrupted: "同步中断",
   syncing: "同步中",
   synced: "同步成功",
@@ -190,13 +191,13 @@ export function ProviderBillingPage() {
       render: (_, r) => money(r.snapshot?.local_estimate),
     },
     {
-      title: "厂商原价（元）",
+      title: "厂商模型原价（元）",
       key: "gross",
       align: "right",
       render: (_, r) => money(r.snapshot?.gross),
     },
     {
-      title: "厂商应付（元）",
+      title: "厂商模型应付（元）",
       key: "payable",
       align: "right",
       render: (_, r) => money(r.snapshot?.payable),
@@ -256,7 +257,7 @@ export function ProviderBillingPage() {
         AI 厂商月度对账
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        按厂商账号核对月度支出。本站成本为估算；优惠、资源包、退款及其他系统调用可能产生差额，不自动调整用户积分。
+        仅核对模型调用费用，排除服务器、数据库、带宽、存储和软件席位订阅。本站成本为估算，不自动调整用户积分。
       </Typography.Paragraph>
       <Space wrap>
         <DatePicker
@@ -365,7 +366,7 @@ export function ProviderBillingPage() {
             <Alert
               type="warning"
               title="这是一份同步时的快照"
-              description="下方保留完整账号的产品汇总。上方金额只汇总配置中选中的产品；产品代码留空则汇总整个账号，可能包含服务器、存储等非AI费用。失败及取消任务未计入本站成功任务估算，仍可能产生厂商费用。"
+              description="下方保留账单产品分组以便核查，非模型或尚未确认的计费项明确排除，不计入上方金额。产品选择留空也仅纳入已核验的模型调用费用。失败及取消任务仍可能产生厂商费用。"
             />
             <Descriptions
               column={1}
@@ -384,7 +385,8 @@ export function ProviderBillingPage() {
                   key: "products",
                   label: "纳入产品",
                   children:
-                    snap.config.products.join("、") || "整个账号（未筛选）",
+                    snap.config.products.join("、") ||
+                    "自动识别已核验的模型产品",
                 },
                 {
                   key: "providers",
@@ -399,7 +401,7 @@ export function ProviderBillingPage() {
               ]}
             />
             <Table
-              rowKey={(r) => `${r.code}:${r.currency}`}
+              rowKey={(r) => `${r.code}:${r.currency}:${r.model_cost}`}
               size="small"
               dataSource={snap.products}
               pagination={{ pageSize: 10 }}
@@ -423,10 +425,12 @@ export function ProviderBillingPage() {
                 {
                   title: "纳入核对",
                   render: (_, r) =>
-                    snap.config.products.length === 0 ||
-                    snap.config.products.includes(r.code)
-                      ? "是"
-                      : "否",
+                    !r.model_cost
+                      ? "排除：非模型或未确认"
+                      : snap.config.products.length === 0 ||
+                          snap.config.products.includes(r.code)
+                        ? "纳入模型费用"
+                        : "排除：未选中",
                 },
               ]}
             />
@@ -527,10 +531,17 @@ export function ProviderBillingPage() {
           </Form.Item>
           <Form.Item
             name="products"
-            label="厂商产品代码"
-            extra="先留空同步，查看产品明细后，再填入需核对的AI产品代码并重新同步。留空会汇总整个账号。"
+            label="模型产品范围"
+            extra="留空时自动纳入已核验的模型调用费用；服务器、数据库、带宽、存储等不能选入。未知模型或计费项需核验后才能纳入。"
           >
-            <Select mode="tags" tokenSeparators={[",", "，"]} />
+            <Select
+              mode="multiple"
+              placeholder="自动识别模型费用"
+              options={(
+                configs.data?.find((c) => c.source === editing)
+                  ?.model_products || []
+              ).map((value) => ({ value, label: value }))}
+            />
           </Form.Item>
           <Form.Item name="exclusive" valuePropName="checked">
             <Checkbox>

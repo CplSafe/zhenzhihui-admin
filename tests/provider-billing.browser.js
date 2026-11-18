@@ -5,8 +5,8 @@ async (page) => {
   const releases = {};
   const syncCalls = [];
   const writes = [];
-  const config = { source: 'volcengine', account_label: '独立账单测试账号', products: ['ark'], local_providers: ['volcengine'], exclusive: true, configured: true };
-  const snapshot = { config, products: [{code:'ark',name:'方舟',currency:'CNY',gross:'12.500001',payable:'10.000001',rows:2},{code:'ecs',name:'云服务器',currency:'CNY',gross:'100',payable:'80',rows:1}],gross:'12.500001',payable:'10.000001',local_estimate:'9.000000',difference:'1.000001',task_count:4,unknown_cost_count:0,pending_count:0,failed_count:0,comparable:true };
+  const config = { source: 'volcengine', account_label: '独立账单测试账号', products: ['ark_bd'], local_providers: ['volcengine'], exclusive: true, configured: true, model_products: ['ark_bd','Doubao-Seedream','ark_open_source_llm'] };
+  const snapshot = { model_only: true, config, products: [{code:'ark_bd',name:'方舟',currency:'CNY',gross:'12.500001',payable:'10.000001',rows:2,model_cost:true},{code:'ecs',name:'云服务器',currency:'CNY',gross:'100',payable:'80',rows:1,model_cost:false}],gross:'12.500001',payable:'10.000001',local_estimate:'9.000000',difference:'1.000001',task_count:4,unknown_cost_count:0,pending_count:0,failed_count:0,comparable:true };
   await page.route('**/api/v1/**', async route => {
     const req = route.request(), path = new URL(req.url()).pathname;
     let data;
@@ -34,6 +34,7 @@ async (page) => {
   await page.screenshot({path:'/tmp/zzh-billing-desktop.png',fullPage:true});
   await page.getByRole('button',{name:/明\s*细/}).first().click();
   await page.getByText('云服务器',{exact:true}).waitFor();
+  await page.getByText('排除：非模型或未确认',{exact:true}).waitFor();
   await page.getByRole('button',{name:/关闭|Close/}).click();
   await page.getByRole('button',{name:'火山账单配置',exact:true}).click();
   await page.getByLabel('账号标识',{exact:true}).fill('更新后的测试账号');

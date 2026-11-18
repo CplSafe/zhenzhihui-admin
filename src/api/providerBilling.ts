@@ -8,6 +8,7 @@ export interface BillingConfig {
   local_providers: string[];
   exclusive: boolean;
   configured: boolean;
+  model_products: string[];
 }
 export interface BillingConfigInput {
   account_label: string;
@@ -24,6 +25,7 @@ export interface BillProduct {
   gross: string;
   payable: string;
   rows: number;
+  model_cost: boolean;
 }
 export interface ProviderBill {
   source: BillSource;
@@ -34,6 +36,7 @@ export interface ProviderBill {
   config_changed: boolean;
   provisional: boolean;
   snapshot: null | {
+    model_only: boolean;
     config: BillingConfig;
     products: BillProduct[];
     gross: string;
