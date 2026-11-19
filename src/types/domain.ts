@@ -206,6 +206,19 @@ export interface CreditLedger extends Entity {
   idempotency_key?: string;
 }
 
+export type CreditRequestStatus = "pending" | "approved" | "rejected" | "expired";
+
+export interface CreditRequestListItem extends Entity {
+  applicant_user_id: number;
+  applicant_name: string;
+  approver_user_id: number;
+  approver_name: string;
+  amount: number;
+  note: string;
+  status: CreditRequestStatus;
+  decided_at: string | null;
+}
+
 export interface Wallet extends MutableEntity {
   workspace_id: number;
   balance: number;

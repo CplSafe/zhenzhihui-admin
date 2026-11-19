@@ -15,6 +15,7 @@ import { WorkspacesPage } from "@/pages/WorkspacesPage";
 import { AITasksPage } from "@/pages/AITasksPage";
 import { AssetsPage } from "@/pages/AssetsPage";
 import { PaymentOrdersPage } from "@/pages/PaymentOrdersPage";
+import { CreditRequestsPage } from "@/pages/CreditRequestsPage";
 import { CreditLedgersPage } from "@/pages/CreditLedgersPage";
 import { WalletsPage } from "@/pages/WalletsPage";
 import { SubscriptionsPage } from "@/pages/SubscriptionsPage";
@@ -55,6 +56,7 @@ const pageByKey: Record<string, ReactNode> = {
   "ai-tasks": <AITasksPage />,
   assets: <AssetsPage />,
   billing: <PaymentOrdersPage />,
+  "credit-requests": <CreditRequestsPage />,
   "credit-ledgers": <CreditLedgersPage />,
   wallets: <WalletsPage />,
   subscriptions: <SubscriptionsPage />,

@@ -75,6 +75,13 @@ export const menuConfig: MenuItemConfig[] = [
     permission: Permission.BILLING_READ,
   },
   {
+    key: "credit-requests",
+    path: "/billing/credit-requests",
+    label: "积分申请记录",
+    icon: <AccountBookOutlined />,
+    permission: Permission.BILLING_READ,
+  },
+  {
     key: "credit-ledgers",
     path: "/billing/credit-ledgers",
     label: "积分流水",

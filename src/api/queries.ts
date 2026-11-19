@@ -7,6 +7,8 @@ import type {
   AdminWalletItem,
   CanvasUsagePage,
   CreditLedger,
+  CreditRequestListItem,
+  CreditRequestStatus,
   ListPage,
   Overview,
   PaymentOrder,
@@ -139,6 +141,15 @@ export interface CreditLedgerListParams extends Paginated {
 }
 export const listCreditLedgers = listGet<CreditLedger, CreditLedgerListParams>(
   "/admin/billing/credit-ledgers",
+);
+
+export interface CreditRequestListParams extends Paginated {
+  applicant_user_id?: number;
+  approver_user_id?: number;
+  status?: CreditRequestStatus;
+}
+export const listCreditRequests = listGet<CreditRequestListItem, CreditRequestListParams>(
+  "/admin/billing/credit-requests",
 );
 
 export interface WalletListParams extends Paginated {
