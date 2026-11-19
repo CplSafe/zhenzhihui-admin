@@ -16,7 +16,14 @@ const KIND_COLOR: Record<string, string> = {
   settle: 'red',
   release: 'blue',
   credit: 'green',
+  transfer_in: 'green',
+  transfer_out: 'red',
 }
+
+const TRANSFER_KIND_OPTIONS = [
+  { value: 'transfer_in', label: '积分转入' },
+  { value: 'transfer_out', label: '积分转出' },
+]
 
 const columns: TableColumnsType<CreditLedger> = [
   { title: 'ID', dataIndex: 'id', width: 80, render: (v) => <Mono>{v}</Mono> },
@@ -30,17 +37,24 @@ const columns: TableColumnsType<CreditLedger> = [
     title: '类型',
     dataIndex: 'kind',
     width: 100,
-    render: (v) => <Tag color={KIND_COLOR[v] ?? 'default'}>{v}</Tag>,
+    render: (v: CreditLedger['kind']) => (
+      <Tag color={KIND_COLOR[v] ?? 'default'}>
+        {TRANSFER_KIND_OPTIONS.find(({ value }) => value === v)?.label ?? v}
+      </Tag>
+    ),
   },
   {
     title: '变动',
     dataIndex: 'amount',
     width: 110,
-    render: (v: number) => (
-      <span className="tnum" style={{ color: v < 0 ? '#ea2261' : '#0d253d' }}>
-        {fmtSignedCredits(v)}
-      </span>
-    ),
+    render: (v: number, record) => {
+      const amount = record.kind === 'transfer_out' ? -Math.abs(v) : v
+      return (
+        <span className="tnum" style={{ color: amount < 0 ? '#ea2261' : '#0d253d' }}>
+          {fmtSignedCredits(amount)}
+        </span>
+      )
+    },
   },
   {
     title: '余额',
@@ -109,6 +123,7 @@ export function CreditLedgersPage() {
                 { value: 'settle', label: 'settle 结算' },
                 { value: 'release', label: 'release 释放' },
                 { value: 'credit', label: 'credit 入账' },
+                ...TRANSFER_KIND_OPTIONS,
               ]}
               onChange={(v) => setFilters((f) => ({ ...f, kind: v }))}
             />
