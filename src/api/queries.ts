@@ -146,6 +146,7 @@ export const listCreditLedgers = listGet<CreditLedger, CreditLedgerListParams>(
 export interface CreditRequestListParams extends Paginated {
   applicant_user_id?: number;
   approver_user_id?: number;
+  workspace_id?: number;
   status?: CreditRequestStatus;
 }
 export const listCreditRequests = listGet<CreditRequestListItem, CreditRequestListParams>(

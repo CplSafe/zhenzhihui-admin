@@ -28,6 +28,11 @@ const columns: TableColumnsType<CreditRequestListItem> = [
   { title: '申请编号', dataIndex: 'id', width: 96, render: (id: number) => <Mono>{id}</Mono> },
   { title: '申请人', render: (_, row) => participant(row.applicant_name, row.applicant_user_id) },
   { title: '审批人', render: (_, row) => participant(row.approver_name, row.approver_user_id) },
+  {
+    title: '到账工作空间',
+    render: (_, { workspace }) =>
+      workspace ? participant(workspace.name, workspace.id) : '个人空间（历史记录）',
+  },
   { title: '申请积分', dataIndex: 'amount', width: 110, render: (amount: number) => <Credits value={amount} /> },
   {
     title: '状态',
@@ -42,7 +47,13 @@ const columns: TableColumnsType<CreditRequestListItem> = [
   { title: '处理时间', dataIndex: 'decided_at', width: 175, render: fmtTime },
 ]
 
-type Filters = Pick<CreditRequestListParams, 'applicant_user_id' | 'approver_user_id' | 'status'>
+const idFilters = [
+  { field: 'applicant_user_id', label: '申请人用户 ID' },
+  { field: 'approver_user_id', label: '审批人用户 ID' },
+  { field: 'workspace_id', label: '到账空间 ID' },
+] as const
+
+type Filters = Pick<CreditRequestListParams, (typeof idFilters)[number]['field'] | 'status'>
 
 export function CreditRequestsPage() {
   const [filters, setFilters] = useState<Filters>({})
@@ -57,26 +68,19 @@ export function CreditRequestsPage() {
       title="积分申请记录"
       filters={
         <Space wrap>
-          <InputNumber
-            aria-label="申请人用户 ID"
-            placeholder="申请人用户 ID"
-            style={{ width: 160 }}
-            min={1}
-            max={Number.MAX_SAFE_INTEGER}
-            precision={0}
-            controls={false}
-            onChange={(value) => setFilters((current) => ({ ...current, applicant_user_id: value ?? undefined }))}
-          />
-          <InputNumber
-            aria-label="审批人用户 ID"
-            placeholder="审批人用户 ID"
-            style={{ width: 160 }}
-            min={1}
-            max={Number.MAX_SAFE_INTEGER}
-            precision={0}
-            controls={false}
-            onChange={(value) => setFilters((current) => ({ ...current, approver_user_id: value ?? undefined }))}
-          />
+          {idFilters.map(({ field, label }) => (
+            <InputNumber
+              key={field}
+              aria-label={label}
+              placeholder={label}
+              style={{ width: 160 }}
+              min={1}
+              max={Number.MAX_SAFE_INTEGER}
+              precision={0}
+              controls={false}
+              onChange={(value) => setFilters((current) => ({ ...current, [field]: value ?? undefined }))}
+            />
+          ))}
           <Select<CreditRequestStatus | undefined>
             aria-label="审批状态"
             placeholder="审批状态"

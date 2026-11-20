@@ -213,6 +213,7 @@ export interface CreditRequestListItem extends Entity {
   applicant_name: string;
   approver_user_id: number;
   approver_name: string;
+  workspace: Pick<Workspace, "id" | "name" | "type"> | null;
   amount: number;
   note: string;
   status: CreditRequestStatus;
