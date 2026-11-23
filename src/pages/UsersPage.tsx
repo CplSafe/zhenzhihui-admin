@@ -23,11 +23,13 @@ import { ListPageShell } from "@/components/ListPageShell";
 import { Can } from "@/components/Can";
 import { UsageSummaryPanel } from "@/components/UsageSummaryPanel";
 import { Credits, Mono } from "@/components/cells";
+import { useAdminSession } from "@/hooks/useAdminSession";
 import { usePagedList } from "@/hooks/usePagedList";
+import { startUserImpersonation } from "@/api/admin";
 import { getUser, listUsers } from "@/api/queries";
 import { listPlans } from "@/api/plans";
 import { adjustCredits, grantPlan, createTeamGrant } from "@/api/grants";
-import { Permission } from "@/types/admin";
+import { Permission, RoleCode } from "@/types/admin";
 import { ApiError } from "@/types/api";
 import type {
   AdminUserDetail,
@@ -48,6 +50,17 @@ const columns: TableColumnsType<User> = [
     render: (v) => <Mono>{v}</Mono>,
   },
   {
+    title: "团队所有者",
+    key: "owned_teams",
+    render: (_, { owned_teams }) => owned_teams?.length ? (
+      <Space orientation="vertical" size={2}>
+        {owned_teams.map((team) => (
+          <span key={team.id}>{team.name || "未命名团队"} <Mono>#{team.id}</Mono></span>
+        ))}
+      </Space>
+    ) : "否",
+  },
+  {
     title: "注册时间",
     dataIndex: "created_at",
     width: 170,
@@ -59,8 +72,11 @@ export function UsersPage() {
   const [creating, setCreating] = useState(false);
   const queryClient = useQueryClient();
   const { message } = App.useApp();
+  const { data: adminSession } = useAdminSession();
+  const canViewAsUser = adminSession?.roles.some((role) => role.code === RoleCode.SUPER_ADMIN);
   const [keyword, setKeyword] = useState("");
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
+  const [openingUserId, setOpeningUserId] = useState<number | null>(null);
 
   const { items, loading, error, pagination } = usePagedList<
     User,
@@ -71,17 +87,70 @@ export function UsersPage() {
     fetcher: listUsers,
   });
 
+  async function openUserView(userId: number) {
+    let destination: URL;
+    try {
+      destination = new URL("/view-as-user", import.meta.env.VITE_ZZH_REMOTE_ORIGIN);
+      if (destination.protocol !== "https:") throw new Error("Expected HTTPS");
+    } catch {
+      void message.error("用户端访问地址未配置为 HTTPS");
+      return;
+    }
+
+    const tab = window.open("about:blank", "_blank");
+    if (!tab) {
+      void message.error("浏览器拦截了新标签页，请允许弹出窗口后重试");
+      return;
+    }
+
+    setOpeningUserId(userId);
+    try {
+      tab.opener = null;
+      tab.document.title = "正在打开用户端";
+      tab.document.body.textContent = "正在打开用户端…";
+
+      const { code } = await startUserImpersonation(userId);
+      if (!code) throw new Error("Missing impersonation code");
+      if (tab.closed) return;
+      destination.hash = new URLSearchParams({ code }).toString();
+      const link = tab.document.createElement("a");
+      link.href = destination.href;
+      link.rel = "noreferrer";
+      link.hidden = true;
+      tab.document.body.append(link);
+      link.click();
+    } catch (error) {
+      tab.close();
+      void message.error(error instanceof ApiError ? error.message : "打开用户端失败，请重试");
+    } finally {
+      setOpeningUserId(null);
+    }
+  }
+
   const detailCols: TableColumnsType<User> = [
     ...columns,
     {
       title: "操作",
       key: "action",
       fixed: "right",
-      width: 80,
+      width: canViewAsUser ? 200 : 80,
       render: (_, r) => (
-        <Button type="link" size="small" onClick={() => setActiveUserId(r.id)}>
-          详情
-        </Button>
+        <Space size={4}>
+          <Button type="link" size="small" onClick={() => setActiveUserId(r.id)}>
+            详情
+          </Button>
+          {canViewAsUser && (
+            <Button
+              type="link"
+              size="small"
+              loading={openingUserId === r.id}
+              disabled={openingUserId !== null}
+              onClick={() => void openUserView(r.id)}
+            >
+              以用户身份查看
+            </Button>
+          )}
+        </Space>
       ),
     },
   ];

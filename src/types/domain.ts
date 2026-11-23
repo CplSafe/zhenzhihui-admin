@@ -53,6 +53,7 @@ export interface User extends MutableEntity {
   nickname?: string;
   email?: string;
   email_verified_at?: string;
+  owned_teams?: { id: number; name: string }[];
 }
 
 // 销售数据(推广绑定)列表行:邀请人 + 被邀请人 双方档案 + 绑定码 + 绑定时间。

@@ -6,3 +6,7 @@ import type { AdminSession } from '@/types/admin'
 export function fetchAdminSession(): Promise<AdminSession> {
   return http.get<AdminSession>('/admin/session')
 }
+
+export function startUserImpersonation(userId: number) {
+  return http.post<{ code: string }>(`/admin/users/${userId}/impersonation`, {})
+}
