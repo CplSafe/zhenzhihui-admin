@@ -232,9 +232,9 @@ function CanvasMedia({ scope, assetId, title }: { scope: CanvasPreviewScope; ass
 
   const kind = query.data?.mime_type?.toLowerCase().split("/")[0];
   const onError = () => setFailedAt(query.dataUpdatedAt);
-  if (kind === "image") return <img className={styles.media} key={query.dataUpdatedAt} src={src} alt={title} referrerPolicy="no-referrer" onError={onError} />;
-  if (kind === "video") return <video className={styles.media} key={query.dataUpdatedAt} src={src} controls playsInline preload="metadata" aria-label={title} onError={onError} />;
-  if (kind === "audio") return <audio className={styles.media} key={query.dataUpdatedAt} src={src} controls preload="metadata" aria-label={title} onError={onError} />;
+  if (kind === "image") return <img className={styles.media} key={query.dataUpdatedAt} crossOrigin="anonymous" referrerPolicy="no-referrer" src={src} alt={title} onError={onError} />;
+  if (kind === "video") return <video className={styles.media} key={query.dataUpdatedAt} crossOrigin="anonymous" src={src} controls playsInline preload="metadata" aria-label={title} onError={onError} />;
+  if (kind === "audio") return <audio className={styles.media} key={query.dataUpdatedAt} crossOrigin="anonymous" src={src} controls preload="metadata" aria-label={title} onError={onError} />;
   return <Typography.Text type="secondary">该素材类型暂不支持预览</Typography.Text>;
 }
 
