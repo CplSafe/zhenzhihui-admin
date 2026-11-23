@@ -20,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Can } from "@/components/Can";
 import { UsageSummaryPanel } from "@/components/UsageSummaryPanel";
+import { UserCanvasPreview } from "@/components/UserCanvasPreview";
 import { UserHierarchyPanel } from "@/components/UserHierarchyPanel";
 import { Credits, Mono } from "@/components/cells";
 import { getUser } from "@/api/queries";
@@ -27,7 +28,7 @@ import { listPlans } from "@/api/plans";
 import { adjustCredits, grantPlan, createTeamGrant } from "@/api/grants";
 import { Permission } from "@/types/admin";
 import { ApiError } from "@/types/api";
-import type { AdminUserDetail, Plan, UserWorkspaceItem } from "@/types/domain";
+import type { AdminUserDetail, Plan, UserWorkspaceItem, Workspace } from "@/types/domain";
 import { fmtCredits, fmtTime, formatCreditsAsCny } from "@/utils/format";
 
 const TYPE_LABEL = { personal: "个人空间", team: "团队空间", enterprise: "企业空间" };
@@ -49,10 +50,12 @@ function quotaLabel(value?: number) {
 export function UserDetailDrawer({
   userId,
   initialWorkspaceId,
+  canViewCanvases,
   onClose,
 }: {
   userId: number | null;
   initialWorkspaceId?: number | null;
+  canViewCanvases: boolean;
   onClose: () => void;
 }) {
   const { message } = App.useApp();
@@ -65,6 +68,7 @@ export function UserDetailDrawer({
     null,
   );
   const [usageWorkspaceId, setUsageWorkspaceId] = useState(initialWorkspaceId ?? null);
+  const [canvasWorkspace, setCanvasWorkspace] = useState<Workspace | null>(null);
 
   const detail = useQuery<AdminUserDetail, ApiError>({
     queryKey: ["admin", "user-detail", userId],
@@ -195,9 +199,17 @@ export function UserDetailDrawer({
                       >
                         {showUsage ? "收起使用统计" : "查看使用统计"}
                       </Button>
+                      {canViewCanvases && (
+                        <Button size="small" onClick={() => setCanvasWorkspace(workspace)}>查看画布</Button>
+                      )}
                       <Can permission={Permission.WORKSPACES_READ}>
                         <Link to={`/workspaces?workspace_id=${workspace.id}`}>打开空间详情</Link>
                       </Can>
+                      {userId !== null && (
+                        <Can permission={Permission.ASSETS_READ}>
+                          <Link to={`/assets?user_id=${userId}&workspace_id=${workspace.id}&source=generated`}>查看生成素材</Link>
+                        </Can>
+                      )}
                       <Can permission={Permission.GRANTS_WRITE}>
                         <Button size="small" onClick={() => setGrantTarget(item)}>
                           授予套餐
@@ -217,6 +229,14 @@ export function UserDetailDrawer({
           </Space>
         )}
       </Drawer>
+
+      {canViewCanvases && userId !== null && canvasWorkspace && (
+        <UserCanvasPreview
+          userId={userId}
+          workspace={canvasWorkspace}
+          onClose={() => setCanvasWorkspace(null)}
+        />
+      )}
 
       {creatingTeam && userId !== null && (
         <GrantPlanModal

@@ -42,8 +42,8 @@ export function UsersPage() {
   const queryClient = useQueryClient();
   const { message } = App.useApp();
   const { data: adminSession } = useAdminSession();
-  const canViewAsUser = adminSession?.roles.some((role) => role.code === RoleCode.SUPER_ADMIN);
   const { has } = usePermission();
+  const canViewAsUser = has(Permission.USERS_READ) && !!adminSession?.roles.some((role) => role.code === RoleCode.SUPER_ADMIN);
   const canOpenWorkspace = has(Permission.WORKSPACES_READ);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeUserId = readRouteId(searchParams.get("user_id"));
@@ -196,6 +196,7 @@ export function UsersPage() {
         key={`${activeUserId ?? "closed"}:${workspaceFilter ?? "all"}`}
         userId={activeUserId}
         initialWorkspaceId={workspaceFilter}
+        canViewCanvases={canViewAsUser}
         onClose={() => selectUser(null)}
       />
     </>

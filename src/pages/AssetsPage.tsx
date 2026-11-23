@@ -1,23 +1,19 @@
 import { useState } from 'react'
-import { Button, Descriptions, Drawer, Image, Input, Select, Space, Tag, Tooltip } from 'antd'
+import { Button, Descriptions, Drawer, Image, InputNumber, Select, Space, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ListPageShell } from '@/components/ListPageShell'
 import { AssetThumb } from '@/components/AssetThumb'
 import { Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
-import { getAssetDownloadURL, listAssets } from '@/api/queries'
+import { getAssetDownloadURL, listAssets, type AssetListParams } from '@/api/queries'
 import type { ApiError } from '@/types/api'
 import type { Asset } from '@/types/domain'
+import { readRouteId } from '@/router/routeId'
 import { fmtTime, humanBytes } from '@/utils/format'
 
-interface Filters {
-  workspace_id?: number
-  user_id?: number
-  type?: string
-  status?: string
-  seedance_status?: string
-}
+type Filters = Pick<AssetListParams, 'type' | 'status' | 'seedance_status'>
 
 const reviewStates: Record<string, { label: string; color: string }> = {
   submitting: { label: '送审中', color: 'processing' },
@@ -79,10 +75,27 @@ function AssetPreview({ asset }: { asset: Asset }) {
 export function AssetsPage() {
   const [filters, setFilters] = useState<Filters>({})
   const [active, setActive] = useState<Asset | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const workspaceId = readRouteId(searchParams.get('workspace_id'))
+  const userId = readRouteId(searchParams.get('user_id'))
+  const generatedOnly = searchParams.get('source') === 'generated'
 
-  const { items, loading, error, pagination, refetch } = usePagedList<Asset, Filters>({
+  function updateFilter(key: 'workspace_id' | 'user_id' | 'source', value: string | number | null) {
+    const next = new URLSearchParams(searchParams)
+    if (value === null) next.delete(key)
+    else next.set(key, String(value))
+    setActive(null)
+    setSearchParams(next, { replace: true })
+  }
+
+  const { items, loading, error, pagination, refetch } = usePagedList<Asset, AssetListParams>({
     queryKey: 'admin-assets-list',
-    filters,
+    filters: {
+      ...filters,
+      workspace_id: workspaceId ?? undefined,
+      user_id: userId ?? undefined,
+      source: generatedOnly ? 'generated' : undefined,
+    },
     fetcher: listAssets,
   })
 
@@ -146,19 +159,31 @@ export function AssetsPage() {
         title="素材管理"
         filters={
           <Space wrap>
-            <Input
-              allowClear
-              placeholder="workspace ID"
-              style={{ width: 140 }}
-              onChange={(e) =>
-                setFilters((f) => ({
-                  ...f,
-                  workspace_id: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
+            <InputNumber
+              min={1}
+              max={Number.MAX_SAFE_INTEGER}
+              precision={0}
+              controls={false}
+              placeholder="空间 ID"
+              aria-label="空间 ID"
+              style={{ width: 130 }}
+              value={workspaceId}
+              onChange={(value) => updateFilter('workspace_id', value)}
             />
+            <InputNumber
+              min={1}
+              max={Number.MAX_SAFE_INTEGER}
+              precision={0}
+              controls={false}
+              placeholder="用户 ID"
+              aria-label="用户 ID"
+              style={{ width: 130 }}
+              value={userId}
+              onChange={(value) => updateFilter('user_id', value)}
+            />
+            {generatedOnly && (
+              <Tag closable onClose={() => updateFilter('source', null)}>仅生成素材</Tag>
+            )}
             <Select
               allowClear
               placeholder="类型"

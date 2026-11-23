@@ -120,6 +120,7 @@ export interface AssetListParams extends Paginated {
   user_id?: number;
   type?: string;
   status?: string;
+  source?: string;
   seedance_status?: string;
 }
 export const listAssets = listGet<Asset, AssetListParams>("/admin/assets");
