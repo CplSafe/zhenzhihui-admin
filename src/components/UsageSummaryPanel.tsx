@@ -2,27 +2,33 @@ import { Alert, Button, Card, Descriptions, Skeleton, Space, Typography } from "
 import { ReloadOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { getUserUsageSummary, getWorkspaceUsageSummary } from "@/api/queries";
+import { Credits } from "@/components/cells";
 import type { ApiError } from "@/types/api";
 import type { UsageSummary } from "@/types/domain";
-import { fmtCredits, fmtDuration, fmtNumber } from "@/utils/format";
+import { fmtDuration, fmtNumber } from "@/utils/format";
 
-interface UsageSummaryPanelProps {
-  scope: "user" | "workspace";
-  id: number;
-}
+type UsageSummaryPanelProps =
+  | { scope: "user"; id: number; workspaceId?: number }
+  | { scope: "workspace"; id: number; workspaceId?: never };
 
-export function UsageSummaryPanel({ scope, id }: UsageSummaryPanelProps) {
+export function UsageSummaryPanel({ scope, id, workspaceId }: UsageSummaryPanelProps) {
   const query = useQuery<UsageSummary, ApiError>({
-    queryKey: ["admin", "usage-summary", scope, id],
-    queryFn: () => scope === "user" ? getUserUsageSummary(id) : getWorkspaceUsageSummary(id),
+    queryKey: ["admin", "usage-summary", scope, id, workspaceId],
+    queryFn: () => scope === "user" ? getUserUsageSummary(id, workspaceId) : getWorkspaceUsageSummary(id),
     retry: false,
   });
   const summary = query.data;
   const completeDuration = summary?.video_duration_seconds;
+  const tasks = summary?.task_counts;
+  const description = workspaceId
+    ? "统计该用户在当前空间的用量，本月以北京时间自然月计算。"
+    : scope === "user"
+      ? "使用积分和生成素材按本人跨所有空间累计；剩余积分仅为个人空间可用余额，不含团队共享积分。"
+      : "使用积分和生成素材按整个空间累计；剩余积分为空间可用余额。";
 
   return (
     <Card
-      title="使用统计"
+      title={workspaceId ? "该用户在此空间的使用统计" : "使用统计"}
       size="small"
       extra={
         <Button
@@ -53,7 +59,7 @@ export function UsageSummaryPanel({ scope, id }: UsageSummaryPanelProps) {
         {summary && (
           <Descriptions column={1} size="small" bordered>
             <Descriptions.Item label="累计使用积分总数">
-              <span className="tnum">{fmtCredits(summary.used_credits)}</span>
+              <Credits value={summary.used_credits} showEquivalent />
             </Descriptions.Item>
             <Descriptions.Item label="累计视频数量">
               <span className="tnum">{fmtNumber(summary.video_count)}</span>
@@ -61,11 +67,26 @@ export function UsageSummaryPanel({ scope, id }: UsageSummaryPanelProps) {
             <Descriptions.Item label="累计图片数量">
               <span className="tnum">{fmtNumber(summary.image_count)}</span>
             </Descriptions.Item>
-            <Descriptions.Item label="剩余积分总数">
-              <span className="tnum">
-                {summary.remaining_credits === null ? "暂无钱包" : fmtCredits(summary.remaining_credits)}
-              </span>
-            </Descriptions.Item>
+            {(!workspaceId || summary.remaining_credits != null) && (
+              <Descriptions.Item label={workspaceId ? "个人空间可用积分" : "剩余积分总数"}>
+                {summary.remaining_credits === null ? "暂无钱包" : <Credits value={summary.remaining_credits} showEquivalent />}
+              </Descriptions.Item>
+            )}
+            {workspaceId && summary.month_used_credits != null && (
+              <Descriptions.Item label="本月已结算积分">
+                <Credits value={summary.month_used_credits} showEquivalent />
+              </Descriptions.Item>
+            )}
+            {workspaceId && tasks && (
+              <>
+                <Descriptions.Item label="累计生成任务">
+                  {formatTaskCounts(tasks.total, tasks.succeeded, tasks.failed, tasks.other)}
+                </Descriptions.Item>
+                <Descriptions.Item label="本月生成任务">
+                  {formatTaskCounts(tasks.month_total, tasks.month_succeeded, tasks.month_failed, tasks.month_other)}
+                </Descriptions.Item>
+              </>
+            )}
             <Descriptions.Item label="视频总时长">
               <Space orientation="vertical" size={4}>
                 {completeDuration == null ? (
@@ -94,12 +115,14 @@ export function UsageSummaryPanel({ scope, id }: UsageSummaryPanelProps) {
           </Descriptions>
         )}
         <Typography.Text type="secondary">
-          {scope === "user"
-            ? "使用积分和生成素材按本人跨所有空间累计；剩余积分仅为个人空间可用余额，不含团队共享积分。"
-            : "使用积分和生成素材按整个空间累计；剩余积分为空间可用余额。"}
+          {description}
           图片、视频仅统计有效且未删除的 AI 生成素材，不含上传素材；使用积分按已结算流水累计。
         </Typography.Text>
       </Space>
     </Card>
   );
+}
+
+function formatTaskCounts(total: number, succeeded: number, failed: number, other: number): string {
+  return `共 ${fmtNumber(total)} · 成功 ${fmtNumber(succeeded)} · 失败 ${fmtNumber(failed)} · 其他 ${fmtNumber(other)}`;
 }

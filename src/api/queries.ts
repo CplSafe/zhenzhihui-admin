@@ -1,6 +1,7 @@
 import { http } from "@/api/client";
 import type {
   AITask,
+  AdminWorkspaceDetail,
   Asset,
   AdminAuditLog,
   AdminUserDetail,
@@ -47,14 +48,15 @@ interface Paginated {
 
 export interface UserListParams extends Paginated {
   keyword?: string;
+  workspace_id?: number;
   created_from?: string;
   created_to?: string;
 }
 export const listUsers = listGet<User, UserListParams>("/admin/users");
 export const getUser = (id: number) =>
   http.get<AdminUserDetail>(`/admin/users/${id}`);
-export const getUserUsageSummary = (id: number) =>
-  http.get<UsageSummary>(`/admin/users/${id}/usage-summary`);
+export const getUserUsageSummary = (id: number, workspaceId?: number) =>
+  http.get<UsageSummary>(`/admin/users/${id}/usage-summary${qs({ workspace_id: workspaceId })}`);
 
 // 销售数据(推广绑定):按 邀请人/被邀请人 的 ID/手机号 查询。
 export interface ReferralBindingListParams extends Paginated {
@@ -77,7 +79,7 @@ export const listWorkspaces = listGet<Workspace, WorkspaceListParams>(
   "/admin/workspaces",
 );
 export const getWorkspace = (id: number) =>
-  http.get<unknown>(`/admin/workspaces/${id}`);
+  http.get<AdminWorkspaceDetail>(`/admin/workspaces/${id}`);
 export const getWorkspaceUsageSummary = (id: number) =>
   http.get<UsageSummary>(`/admin/workspaces/${id}/usage-summary`);
 export const listWorkspaceCanvasUsage = (id: number, params: Paginated & { month?: string }) =>

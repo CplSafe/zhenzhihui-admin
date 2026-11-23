@@ -4,7 +4,7 @@ import type { TableColumnsType, TablePaginationConfig } from 'antd'
 import type { ApiError } from '@/types/api'
 
 interface ListPageShellProps<T> {
-  title: string
+  title?: string
   titleLevel?: 1 | 4
   // 筛选栏(输入框/下拉/日期等),由各页面自行组合。
   filters?: ReactNode
@@ -30,9 +30,11 @@ export function ListPageShell<T extends object>({
 }: ListPageShellProps<T>) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Typography.Title level={titleLevel} style={{ margin: 0, fontWeight: 300, ...(titleLevel === 1 ? { fontSize: 22 } : {}) }}>
-        {title}
-      </Typography.Title>
+      {title && (
+        <Typography.Title level={titleLevel} style={{ margin: 0, fontWeight: 300, ...(titleLevel === 1 ? { fontSize: 22 } : {}) }}>
+          {title}
+        </Typography.Title>
+      )}
 
       {error && (
         <Alert

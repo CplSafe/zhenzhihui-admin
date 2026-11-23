@@ -1,7 +1,7 @@
 import { Button, Space, Tag, Typography } from "antd";
 import { Can } from "@/components/Can";
 import type { PermissionCode } from "@/types/admin";
-import { yuan, fmtNumber, fmtCredits } from "@/utils/format";
+import { yuan, fmtNumber, fmtCredits, formatCreditsAsCny } from "@/utils/format";
 
 // 金额单元格:tnum 等宽数字 + ¥ 元。DESIGN.md 金融数据签名。
 export function Money({ cents }: { cents?: number | null }) {
@@ -14,8 +14,15 @@ export function Count({ value }: { value?: number | null }) {
 }
 
 // 积分单元格:tnum 千分位,最多 3 位小数。
-export function Credits({ value }: { value?: number | null }) {
-  return <span className="tnum">{fmtCredits(value)}</span>;
+export function Credits({ value, showEquivalent = false }: { value?: number | null; showEquivalent?: boolean }) {
+  return (
+    <span className="tnum">
+      {fmtCredits(value)}
+      {showEquivalent && value != null && Number.isFinite(value) && (
+        <Typography.Text type="secondary">（约 {formatCreditsAsCny(value)}）</Typography.Text>
+      )}
+    </span>
+  );
 }
 
 // ID / 短码等技术字段:等宽淡色。

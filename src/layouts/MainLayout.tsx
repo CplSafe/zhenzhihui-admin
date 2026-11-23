@@ -5,7 +5,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAdminSession } from "@/hooks/useAdminSession";
 import { usePermission } from "@/hooks/usePermission";
 import { redirectToLogin } from "@/api/client";
-import { menuConfig } from "@/router/menuConfig";
+import { menuConfig, type MenuItemConfig } from "@/router/menuConfig";
 
 const { Sider, Header, Content } = Layout;
 
@@ -18,20 +18,21 @@ export function MainLayout() {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  // 仅渲染当前用户有权限的菜单项。
-  const menuItems = useMemo(
-    () =>
-      menuConfig
-        .filter((m) => !m.permission || has(m.permission))
-        .map((m) => ({ key: m.path, icon: m.icon, label: m.label })),
-    [has],
-  );
+  // 同组路由共用入口，按菜单顺序进入当前用户有权限的第一个页面。
+  const menuRoutes = useMemo(() => {
+    const entries = new Map<string, MenuItemConfig>();
+    for (const route of menuConfig) {
+      const key = route.menuGroup ?? route.path;
+      if ((!route.permission || has(route.permission)) && !entries.has(key)) entries.set(key, route);
+    }
+    return entries;
+  }, [has]);
 
   // 选最长前缀匹配,避免 /billing 抢走 /billing/credit-ledgers 的高亮。
-  const selectedKey =
-    menuConfig
-      .filter((m) => location.pathname.startsWith(m.path))
-      .sort((a, b) => b.path.length - a.path.length)[0]?.path ?? "";
+  const selectedRoute = menuConfig
+    .filter((m) => location.pathname.startsWith(m.path))
+    .sort((a, b) => b.path.length - a.path.length)[0];
+  const selectedKey = selectedRoute?.menuGroup ?? selectedRoute?.path ?? "";
 
   const roleNames = session?.roles.map((r) => r.name).join("、") || "后台用户";
 
@@ -58,8 +59,11 @@ export function MainLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
+          items={Array.from(menuRoutes, ([key, route]) => ({ key, icon: route.icon, label: route.label }))}
+          onClick={({ key }) => {
+            const route = menuRoutes.get(key);
+            if (route) navigate(route.path);
+          }}
         />
       </Sider>
       <Layout>

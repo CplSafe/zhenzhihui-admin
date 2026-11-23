@@ -25,7 +25,13 @@ export interface MenuItemConfig {
   label: string;
   icon?: ReactNode;
   permission?: PermissionCode;
+  menuGroup?: string;
 }
+
+export const userManagementRoutes = [
+  { key: "users", path: "/users", label: "用户", permission: Permission.USERS_READ },
+  { key: "workspaces", path: "/workspaces", label: "团队与空间", permission: Permission.WORKSPACES_READ },
+] as const;
 
 export const menuConfig: MenuItemConfig[] = [
   { key: "provider-bills", path: "/billing/provider-bills", label: "AI 厂商对账", icon: <AccountBookOutlined />, permission: Permission.BILLING_READ },
@@ -37,20 +43,12 @@ export const menuConfig: MenuItemConfig[] = [
     icon: <DashboardOutlined />,
     permission: Permission.OVERVIEW_READ,
   },
-  {
-    key: "users",
-    path: "/users",
+  ...userManagementRoutes.map((route) => ({
+    ...route,
     label: "用户管理",
     icon: <UserOutlined />,
-    permission: Permission.USERS_READ,
-  },
-  {
-    key: "workspaces",
-    path: "/workspaces",
-    label: "工作空间",
-    icon: <TeamOutlined />,
-    permission: Permission.WORKSPACES_READ,
-  },
+    menuGroup: "user-management",
+  })),
   {
     key: "ai-tasks",
     path: "/ai-tasks",

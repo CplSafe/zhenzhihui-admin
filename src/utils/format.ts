@@ -56,3 +56,18 @@ export const fmtCredits = (n?: number | null): string =>
 // 带符号积分(流水变动):+1,234.5 / -0.044。
 export const fmtSignedCredits = (n?: number | null): string =>
   hasValue(n) ? `${n > 0 ? "+" : ""}${CREDITS_FMT.format(n)}` : DASH;
+
+// 按固定积分比率展示人民币折算。保留毫积分对应的五位小数。
+const CNY_PER_CREDIT = 0.02;
+const CREDIT_CNY_FMT = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "CNY",
+  currencyDisplay: "narrowSymbol",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 5,
+});
+
+export const formatCreditsAsCny = (credits?: number | null): string =>
+  hasValue(credits) && Number.isFinite(credits)
+    ? CREDIT_CNY_FMT.format((credits || 0) * CNY_PER_CREDIT)
+    : DASH;

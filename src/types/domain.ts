@@ -76,6 +76,13 @@ export interface Workspace extends MutableEntity {
   status: WorkspaceStatus;
 }
 
+export interface AdminWorkspaceDetail {
+  workspace: Workspace;
+  owner?: User;
+  member_count: number;
+  wallet?: Wallet;
+}
+
 // 管理端累计使用统计；积分已换算为正常积分，不能再次除以 1000。
 export interface UsageSummary {
   used_credits: number;
@@ -87,6 +94,17 @@ export interface UsageSummary {
   known_video_duration_seconds: number;
   estimated_video_count: number;
   missing_video_duration_count: number;
+  month_used_credits?: number;
+  task_counts?: {
+    total: number;
+    succeeded: number;
+    failed: number;
+    other: number;
+    month_total: number;
+    month_succeeded: number;
+    month_failed: number;
+    month_other: number;
+  };
 }
 
 export interface CanvasMemberUsage {
@@ -258,6 +276,14 @@ export interface AdminAuditLog extends Entity {
 export interface UserWorkspaceItem {
   workspace: Workspace;
   role: string;
+  membership?: {
+    role: string;
+    status: string;
+    created_at: string;
+    can_generate: boolean;
+    max_task_credits: number;
+    monthly_credit_limit: number;
+  } | null;
   wallet?: Wallet;
   subscription?: Subscription;
 }

@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fmtCredits, fmtDuration, fmtSignedCredits } from "../src/utils/format.ts";
+import {
+  fmtCredits,
+  fmtDuration,
+  fmtSignedCredits,
+  formatCreditsAsCny,
+} from "../src/utils/format.ts";
 
 test("fmtCredits shows up to 3 decimals with thousands separators", () => {
   assert.equal(fmtCredits(0), "0");
@@ -30,5 +35,17 @@ test("video duration keeps total hours and fractional seconds without rollover",
   assert.equal(fmtDuration(0.01), "0.01 秒");
   for (const value of [null, undefined, -1, NaN, Infinity]) {
     assert.equal(fmtDuration(value), "-");
+  }
+});
+
+test("credits convert to yuan at ¥0.02 per credit with millipoint precision", () => {
+  assert.equal(formatCreditsAsCny(0), "¥0.00");
+  assert.equal(formatCreditsAsCny(-0), "¥0.00");
+  assert.equal(formatCreditsAsCny(1), "¥0.02");
+  assert.equal(formatCreditsAsCny(0.001), "¥0.00002");
+  assert.equal(formatCreditsAsCny(50_000.125), "¥1,000.0025");
+  assert.equal(formatCreditsAsCny(-1.5), "-¥0.03");
+  for (const value of [null, undefined, NaN, Infinity]) {
+    assert.equal(formatCreditsAsCny(value), "-");
   }
 });

@@ -10,8 +10,7 @@ import { RolesPage } from "@/pages/RolesPage";
 import { OperationalLogsPage } from "@/pages/OperationalLogsPage";
 import { DefaultAdminPage } from "@/pages/DefaultAdminPage";
 import { OverviewPage } from "@/pages/OverviewPage";
-import { UsersPage } from "@/pages/UsersPage";
-import { WorkspacesPage } from "@/pages/WorkspacesPage";
+import { UserManagementPage } from "@/pages/UserManagementPage";
 import { AITasksPage } from "@/pages/AITasksPage";
 import { AssetsPage } from "@/pages/AssetsPage";
 import { PaymentOrdersPage } from "@/pages/PaymentOrdersPage";
@@ -51,8 +50,8 @@ const pageByKey: Record<string, ReactNode> = {
  roles: <RolesPage />,
  "request-logs": <OperationalLogsPage key="request" kind="request" />,
  "server-logs": <OperationalLogsPage key="application" kind="application" />,
-  users: <UsersPage />,
-  workspaces: <WorkspacesPage />,
+  users: <UserManagementPage activePath="/users" />,
+  workspaces: <UserManagementPage activePath="/workspaces" />,
   "ai-tasks": <AITasksPage />,
   assets: <AssetsPage />,
   billing: <PaymentOrdersPage />,

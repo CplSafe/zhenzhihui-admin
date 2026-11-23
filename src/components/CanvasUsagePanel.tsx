@@ -10,8 +10,8 @@ const PAGE_SIZE = 20
 const memberColumns: TableColumnsType<CanvasMemberUsage> = [
   { title: '用户 ID', dataIndex: 'user_id', render: (id) => <Mono>{id}</Mono> },
   { title: '成员', dataIndex: 'display_name', render: (name) => name || '—' },
-  { title: '消耗积分（含历史分摊）', dataIndex: 'used_credits', align: 'right', render: (v) => <Credits value={v} /> },
-  { title: '其中历史分摊', dataIndex: 'historical_allocated_credits', align: 'right', render: (v) => <Credits value={v ?? 0} /> },
+  { title: '消耗积分（含历史分摊）', dataIndex: 'used_credits', align: 'right', render: (v) => <Credits value={v} showEquivalent /> },
+  { title: '其中历史分摊积分', dataIndex: 'historical_allocated_credits', align: 'right', render: (v) => <Credits value={v ?? 0} showEquivalent /> },
 ]
 
 const canvasColumns: TableColumnsType<CanvasUsage> = [
@@ -26,7 +26,7 @@ const canvasColumns: TableColumnsType<CanvasUsage> = [
       </Space>
     ),
   },
-  { title: '已结算积分', dataIndex: 'used_credits', align: 'right', render: (v) => <Credits value={v} /> },
+  { title: '已结算积分', dataIndex: 'used_credits', align: 'right', render: (v) => <Credits value={v} showEquivalent /> },
 ]
 
 export function CanvasUsagePanel({ workspaceId }: { workspaceId: number }) {
@@ -74,11 +74,11 @@ function CanvasUsageContent({ workspaceId }: { workspaceId: number }) {
           <div>
             {data.workspace_total_used_credits != null && data.unassigned_used_credits != null ? (
               <Space wrap size={24} aria-label="团队消耗对账">
-                <span>团队{month || '累计'}总消耗：<Credits value={data.workspace_total_used_credits} /> 积分</span>
-                <span>已归属画布：<Credits value={data.total_used_credits} /> 积分</span>
-                <span>历史未分配：<Credits value={data.unassigned_used_credits} /> 积分</span>
+                <span>团队{month || '累计'}总消耗积分：<Credits value={data.workspace_total_used_credits} showEquivalent /></span>
+                <span>已归属画布积分：<Credits value={data.total_used_credits} showEquivalent /></span>
+                <span>历史未分配积分：<Credits value={data.unassigned_used_credits} showEquivalent /></span>
               </Space>
-            ) : <>已归属画布：<Credits value={data.total_used_credits} /> 积分</>}
+            ) : <>已归属画布积分：<Credits value={data.total_used_credits} showEquivalent /></>}
           </div>
         )}
         <Table<CanvasUsage>
@@ -87,6 +87,7 @@ function CanvasUsageContent({ workspaceId }: { workspaceId: number }) {
           columns={canvasColumns}
           dataSource={data?.items ?? []}
           loading={query.isFetching}
+          scroll={{ x: 'max-content' }}
           expandable={{
             rowExpandable: (row) => row.members?.length > 0,
             expandedRowRender: (canvas) => (
@@ -95,6 +96,7 @@ function CanvasUsageContent({ workspaceId }: { workspaceId: number }) {
                 rowKey="user_id"
                 columns={memberColumns}
                 dataSource={canvas.members}
+                scroll={{ x: 'max-content' }}
                 pagination={false}
               />
             ),
