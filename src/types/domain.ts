@@ -227,12 +227,32 @@ export interface CreditLedger extends Entity {
 
 export type CreditRequestStatus = "pending" | "approved" | "rejected" | "expired";
 
+export interface CreditRequestCanvasUsage {
+  canvas_id: number;
+  canvas_name: string;
+  workspace_id: number;
+  workspace_name: string;
+  credits_used: number;
+  image_count: number;
+  video_count: number;
+}
+
+export interface CreditRequestCanvasUsageSnapshot {
+  canvas_count: number;
+  credits_used: number;
+  image_count: number;
+  video_count: number;
+  canvases: CreditRequestCanvasUsage[];
+}
+
 export interface CreditRequestListItem extends Entity {
   applicant_user_id: number;
   applicant_name: string;
   approver_user_id: number;
   approver_name: string;
   workspace: Pick<Workspace, "id" | "name" | "type"> | null;
+  script_name?: string;
+  canvas_usage?: CreditRequestCanvasUsageSnapshot | null;
   amount: number;
   note: string;
   status: CreditRequestStatus;
