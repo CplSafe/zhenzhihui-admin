@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:abilities:browser": "npx --yes --package @playwright/cli playwright-cli --session abilities run-code --filename tests/abilities.browser.js",
+    "test:workspaces:browser": "npx --yes --package @playwright/cli playwright-cli --session workspaces run-code --filename tests/workspaceCreditSpending.browser.js",
     "preview": "vite preview"
   },
   "dependencies": {

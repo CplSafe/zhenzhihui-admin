@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Alert, Button, Descriptions, Drawer, Input, Select, Skeleton, Space, Table, Tabs } from 'antd'
+import { Alert, App, Button, Descriptions, Drawer, Input, Modal, Select, Skeleton, Space, Table, Tabs, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ListPageShell } from '@/components/ListPageShell'
 import { Can } from '@/components/Can'
@@ -11,9 +11,10 @@ import { UsageSummaryPanel } from '@/components/UsageSummaryPanel'
 import { Credits, Mono, StatusTag } from '@/components/cells'
 import { usePagedList } from '@/hooks/usePagedList'
 import { usePermission } from '@/hooks/usePermission'
+import { setWorkspaceCreditSpendingPaused } from '@/api/grants'
 import { getWorkspace, listWorkspaceAuditLogs, listWorkspaceMemberStatistics, listWorkspaces } from '@/api/queries'
 import type { ApiError } from '@/types/api'
-import type { Workspace, WorkspaceAuditLog, WorkspaceMemberStat } from '@/types/domain'
+import type { AdminWorkspaceDetail, Workspace, WorkspaceAuditLog, WorkspaceMemberStat } from '@/types/domain'
 import { readRouteId } from '@/router/routeId'
 import { fmtTime, formatCreditsAsCny } from '@/utils/format'
 
@@ -60,6 +61,8 @@ interface Filters {
 }
 
 type WorkspaceView = 'usage' | 'members' | 'audit'
+
+const workspaceDetailKey = (id: number) => ['admin', 'workspace-detail', id] as const
 
 function userInWorkspaceUrl(userId: number, workspaceId: number) {
   return `/users?workspace_id=${workspaceId}&user_id=${userId}`
@@ -202,7 +205,7 @@ function WorkspaceDetailDrawer({
   onClose: () => void
 }) {
   const query = useQuery({
-    queryKey: ['admin', 'workspace-detail', workspaceId],
+    queryKey: workspaceDetailKey(workspaceId),
     queryFn: () => getWorkspace(workspaceId),
     retry: false,
   })
@@ -248,6 +251,15 @@ function WorkspaceDetailDrawer({
               <Descriptions.Item label="冻结积分"><Credits value={detail.wallet.frozen} showEquivalent /></Descriptions.Item>
             )}
             <Descriptions.Item label="人民币折算">1 积分 = {formatCreditsAsCny(1)}</Descriptions.Item>
+            {(detail.workspace.type === 'team' || detail.workspace.type === 'enterprise') && (
+              <Descriptions.Item label="积分使用">
+                <WorkspaceCreditSpending
+                  workspace={detail.workspace}
+                  paused={detail.wallet?.spending_paused ?? false}
+                  ready={!query.isFetching && !query.isError}
+                />
+              </Descriptions.Item>
+            )}
           </Descriptions>
           <Tabs
             activeKey={view}
@@ -275,6 +287,71 @@ function WorkspaceDetailDrawer({
         </>
       )}
     </Drawer>
+  )
+}
+
+function WorkspaceCreditSpending({ workspace, paused, ready }: {
+  workspace: Workspace
+  paused: boolean
+  ready: boolean
+}) {
+  const { message } = App.useApp()
+  const client = useQueryClient()
+  const [confirmation, setConfirmation] = useState<boolean | null>(null)
+  const queryKey = workspaceDetailKey(workspace.id)
+  const canChangeSpending = workspace.status === 'enabled' || workspace.status === 'disabled'
+  const mutation = useMutation({
+    mutationFn: (nextPaused: boolean) => setWorkspaceCreditSpendingPaused(workspace.id, nextPaused),
+    onSuccess: async ({ paused }) => {
+      await client.cancelQueries({ queryKey, exact: true })
+      client.setQueryData<AdminWorkspaceDetail>(queryKey, (detail) => detail?.wallet
+        ? { ...detail, wallet: { ...detail.wallet, spending_paused: paused } }
+        : detail)
+      await client.invalidateQueries({ queryKey, exact: true })
+      setConfirmation(null)
+      void message.success(paused ? '已暂停团队积分使用' : '已恢复团队积分使用')
+    },
+    onError: () => {
+      void client.invalidateQueries({ queryKey, exact: true })
+    },
+  })
+
+  return (
+    <Space size="small" wrap>
+      <Tag color={paused ? 'warning' : undefined}>{paused ? '已暂停' : '未暂停'}</Tag>
+      {canChangeSpending && (
+        <Can permission={Permission.GRANTS_WRITE}>
+          <Button size="small" danger={!paused} disabled={!ready} onClick={() => {
+            mutation.reset()
+            setConfirmation(!paused)
+          }}>
+            {paused ? '恢复积分使用' : '暂停积分使用'}
+          </Button>
+          <Modal
+            title={confirmation ? '暂停团队积分使用' : '恢复团队积分使用'}
+            open={confirmation !== null}
+            onCancel={() => setConfirmation(null)}
+            onOk={() => {
+              if (confirmation !== null && ready && !mutation.isPending) mutation.mutate(confirmation)
+            }}
+            okText={confirmation ? '确认暂停' : '确认恢复'}
+            cancelText="取消"
+            confirmLoading={mutation.isPending}
+            okButtonProps={{ danger: confirmation === true, disabled: !ready }}
+            cancelButtonProps={{ disabled: mutation.isPending }}
+            closable={!mutation.isPending}
+            keyboard={!mutation.isPending}
+            mask={{ closable: false }}
+          >
+            <p>{workspace.name} · 空间 #{workspace.id}</p>
+            <p>{confirmation
+              ? '所有成员（含所有者）将无法使用团队积分发起新的扣费操作。现有积分余额会保留，已预占积分的任务仍会正常结算，成员可继续访问工作空间。'
+              : '恢复后，团队积分仍按空间状态、成员权限和额度规则使用。'}</p>
+            {mutation.error && <Alert type="error" showIcon title="更新积分使用状态失败" description={mutation.error.message} />}
+          </Modal>
+        </Can>
+      )}
+    </Space>
   )
 }
 

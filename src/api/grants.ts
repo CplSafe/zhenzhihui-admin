@@ -20,5 +20,8 @@ export interface AdjustCreditsBody {
 export const adjustCredits = (workspaceId: number, body: AdjustCreditsBody) =>
   http.post<Wallet>(`/admin/workspaces/${workspaceId}/adjust-credits`, body);
 
+export const setWorkspaceCreditSpendingPaused = (workspaceId: number, paused: boolean) =>
+  http.patch<{ paused: boolean }>(`/admin/workspaces/${workspaceId}/credit-spending`, { paused });
+
 export const createTeamGrant = (userId: number, body: GrantPlanBody & { name: string }) =>
   http.post<GrantPlanResult>(`/admin/users/${userId}/teams/grant-plan`, body);

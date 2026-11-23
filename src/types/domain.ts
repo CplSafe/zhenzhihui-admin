@@ -80,7 +80,7 @@ export interface AdminWorkspaceDetail {
   workspace: Workspace;
   owner?: User;
   member_count: number;
-  wallet?: Wallet;
+  wallet?: Wallet | null;
 }
 
 // 管理端累计使用统计；积分已换算为正常积分，不能再次除以 1000。
@@ -243,6 +243,7 @@ export interface Wallet extends MutableEntity {
   workspace_id: number;
   balance: number;
   frozen: number;
+  spending_paused?: boolean;
 }
 
 // 钱包列表项,对应 admin.AdminWalletItem(联 workspace)。
