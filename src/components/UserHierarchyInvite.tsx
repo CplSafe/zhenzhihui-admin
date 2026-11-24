@@ -20,7 +20,7 @@ export function UserHierarchyInvite({ userId }: { userId: number }) {
   return <Space orientation="vertical" style={{ width: "100%" }}>
     <Typography.Text strong>下级注册链接</Typography.Text>
     <Typography.Text type="secondary">
-      新用户通过此链接或二维码注册后，自动绑定为该用户的直属下级。仅记录上下级关系，不涉及邀请返利；已有账号保持原关系。
+      新用户注册后绑定为该用户的直属下级，并须填写团队名称，开通 7 天团队试用。初始积分为 0，不赠送套餐积分、不涉及邀请返利；已有账号保持原关系。
     </Typography.Text>
     {!link.data && <Button loading={link.isPending} onClick={() => { if (!link.isPending) link.mutate(); }}>生成注册链接和二维码</Button>}
     {link.isError && <Alert type="error" showIcon title={link.error instanceof ApiError ? link.error.message : "注册链接生成失败，请重试"} />}
