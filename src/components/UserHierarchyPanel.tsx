@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Alert, App, Button, Form, Select, Space, Spin, Typography } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Can } from "@/components/Can";
+import { UserHierarchyInvite } from "@/components/UserHierarchyInvite";
 import { http } from "@/api/client";
 import { listUsers } from "@/api/queries";
 import type { User } from "@/types/domain";
@@ -58,6 +59,9 @@ export function UserHierarchyPanel({ userId }: { userId: number }) {
                 <Button disabled={save.isPending} onClick={() => setEditing(false)}>取消</Button>
               </Space>
             </Form>}
+        </Can>
+        <Can permission={Permission.USERS_WRITE}>
+          <UserHierarchyInvite key={userId} userId={userId} />
         </Can>
       </>}
     </Space>
