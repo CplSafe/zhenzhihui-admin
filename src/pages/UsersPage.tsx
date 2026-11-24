@@ -1,7 +1,7 @@
 import { CreateUserModal } from "@/components/CreateUserModal";
 import { UserDetailDrawer } from "@/components/UserDetailDrawer";
 import { useState } from "react";
-import { App, Button, Input, Space, Tag } from "antd";
+import { App, Button, Input, Modal, Space, Tag, Typography } from "antd";
 import type { TableColumnsType } from "antd";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
@@ -43,13 +43,14 @@ export function UsersPage() {
   const { message } = App.useApp();
   const { data: adminSession } = useAdminSession();
   const { has } = usePermission();
-  const canViewAsUser = has(Permission.USERS_READ) && !!adminSession?.roles.some((role) => role.code === RoleCode.SUPER_ADMIN);
+  const canImpersonate = has(Permission.USERS_READ) && !!adminSession?.roles.some((role) => role.code === RoleCode.SUPER_ADMIN);
   const canOpenWorkspace = has(Permission.WORKSPACES_READ);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeUserId = readRouteId(searchParams.get("user_id"));
   const workspaceFilter = readRouteId(searchParams.get("workspace_id"));
   const [keyword, setKeyword] = useState("");
-  const [openingUserId, setOpeningUserId] = useState<number | null>(null);
+  const [loginTarget, setLoginTarget] = useState<User | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
 
   const { items, loading, error, pagination } = usePagedList<
     User,
@@ -68,7 +69,7 @@ export function UsersPage() {
     setSearchParams(next, { replace: userId === null });
   }
 
-  async function openUserView(userId: number) {
+  async function signInAsUser(userId: number) {
     let destination: URL;
     try {
       destination = new URL("/view-as-user", import.meta.env.VITE_ZZH_REMOTE_ORIGIN);
@@ -84,27 +85,31 @@ export function UsersPage() {
       return;
     }
 
-    setOpeningUserId(userId);
+    setSigningIn(true);
     try {
       tab.opener = null;
-      tab.document.title = "正在打开用户端";
-      tab.document.body.textContent = "正在打开用户端…";
+      tab.document.title = "正在登录用户端";
+      tab.document.body.textContent = "正在登录用户端…";
 
       const { code } = await startUserImpersonation(userId);
       if (!code) throw new Error("Missing impersonation code");
-      if (tab.closed) return;
-      destination.hash = new URLSearchParams({ code }).toString();
+      if (tab.closed) {
+        void message.error("登录标签页已关闭，请重试");
+        return;
+      }
+      destination.hash = new URLSearchParams({ code, mode: "account" }).toString();
       const link = tab.document.createElement("a");
       link.href = destination.href;
       link.rel = "noreferrer";
       link.hidden = true;
       tab.document.body.append(link);
       link.click();
+      setLoginTarget(null);
     } catch (error) {
       tab.close();
-      void message.error(error instanceof ApiError ? error.message : "打开用户端失败，请重试");
+      void message.error(error instanceof ApiError ? error.message : "登录用户端失败，请重试");
     } finally {
-      setOpeningUserId(null);
+      setSigningIn(false);
     }
   }
 
@@ -128,21 +133,19 @@ export function UsersPage() {
       title: "操作",
       key: "action",
       fixed: "right",
-      width: canViewAsUser ? 200 : 80,
+      width: canImpersonate ? 200 : 80,
       render: (_, r) => (
         <Space size={4}>
           <Button type="link" size="small" onClick={() => selectUser(r.id)}>
             详情
           </Button>
-          {canViewAsUser && (
+          {canImpersonate && (
             <Button
               type="link"
               size="small"
-              loading={openingUserId === r.id}
-              disabled={openingUserId !== null}
-              onClick={() => void openUserView(r.id)}
+              onClick={() => setLoginTarget(r)}
             >
-              以用户身份查看
+              以用户身份登录
             </Button>
           )}
         </Space>
@@ -192,11 +195,35 @@ export function UsersPage() {
         pagination={pagination}
       />
 
+      <Modal
+        title="以用户身份登录"
+        open={canImpersonate && loginTarget !== null}
+        okText="确认登录"
+        okButtonProps={{ danger: true }}
+        cancelButtonProps={{ disabled: signingIn }}
+        confirmLoading={signingIn}
+        onOk={() => {
+          if (canImpersonate && loginTarget && !signingIn) void signInAsUser(loginTarget.id);
+        }}
+        onCancel={() => {
+          if (!signingIn) setLoginTarget(null);
+        }}
+      >
+        {loginTarget && (
+          <Typography.Paragraph>
+            将在新标签页以 <Typography.Text strong>{loginTarget.nickname || loginTarget.mobile || loginTarget.email || "未命名用户"}（ID {loginTarget.id}）</Typography.Text> 登录用户端。
+          </Typography.Paragraph>
+        )}
+        <Typography.Paragraph>
+          您将使用该用户已有的权限。修改会保存到该用户或其工作空间，生成任务等操作可能消耗工作空间积分。
+        </Typography.Paragraph>
+      </Modal>
+
       <UserDetailDrawer
         key={`${activeUserId ?? "closed"}:${workspaceFilter ?? "all"}`}
         userId={activeUserId}
         initialWorkspaceId={workspaceFilter}
-        canViewCanvases={canViewAsUser}
+        canViewCanvases={canImpersonate}
         onClose={() => selectUser(null)}
       />
     </>

@@ -8,5 +8,5 @@ export function fetchAdminSession(): Promise<AdminSession> {
 }
 
 export function startUserImpersonation(userId: number) {
-  return http.post<{ code: string }>(`/admin/users/${userId}/impersonation`, {})
+  return http.post<{ code: string }>(`/admin/users/${userId}/impersonation`, { mode: 'account' })
 }
