@@ -1,3 +1,4 @@
+import { RebindUserMobileModal } from "@/components/RebindUserMobileModal";
 import { CreateUserModal } from "@/components/CreateUserModal";
 import { UserDetailDrawer } from "@/components/UserDetailDrawer";
 import { useState } from "react";
@@ -43,12 +44,13 @@ export function UsersPage() {
   const { message } = App.useApp();
   const { data: adminSession } = useAdminSession();
   const { has } = usePermission();
-  const canImpersonate = has(Permission.USERS_READ) && !!adminSession?.roles.some((role) => role.code === RoleCode.SUPER_ADMIN);
+  const canManageUserAccount = has(Permission.USERS_READ) && !!adminSession?.roles.some((role) => role.code === RoleCode.SUPER_ADMIN);
   const canOpenWorkspace = has(Permission.WORKSPACES_READ);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeUserId = readRouteId(searchParams.get("user_id"));
   const workspaceFilter = readRouteId(searchParams.get("workspace_id"));
   const [keyword, setKeyword] = useState("");
+  const [rebindTarget, setRebindTarget] = useState<User | null>(null);
   const [loginTarget, setLoginTarget] = useState<User | null>(null);
   const [signingIn, setSigningIn] = useState(false);
 
@@ -133,13 +135,18 @@ export function UsersPage() {
       title: "操作",
       key: "action",
       fixed: "right",
-      width: canImpersonate ? 200 : 80,
+      width: canManageUserAccount ? 285 : 80,
       render: (_, r) => (
         <Space size={4}>
           <Button type="link" size="small" onClick={() => selectUser(r.id)}>
             详情
           </Button>
-          {canImpersonate && (
+          {canManageUserAccount && (
+            <Button type="link" size="small" onClick={() => setRebindTarget(r)}>
+              换绑手机号
+            </Button>
+          )}
+          {canManageUserAccount && (
             <Button
               type="link"
               size="small"
@@ -155,6 +162,17 @@ export function UsersPage() {
 
   return (
     <>
+      {canManageUserAccount && rebindTarget && (
+        <RebindUserMobileModal
+          user={rebindTarget}
+          onClose={() => setRebindTarget(null)}
+          onRebound={() => {
+            setRebindTarget(null);
+            void queryClient.invalidateQueries({ queryKey: ["admin-users-list"] });
+            void queryClient.invalidateQueries({ queryKey: ["admin", "user-detail", rebindTarget.id] });
+          }}
+        />
+      )}
       {creating && (
         <CreateUserModal onClose={() => setCreating(false)} onCreated={(user, existingIdentity) => {
           setCreating(false);
@@ -197,13 +215,13 @@ export function UsersPage() {
 
       <Modal
         title="以用户身份登录"
-        open={canImpersonate && loginTarget !== null}
+        open={canManageUserAccount && loginTarget !== null}
         okText="确认登录"
         okButtonProps={{ danger: true }}
         cancelButtonProps={{ disabled: signingIn }}
         confirmLoading={signingIn}
         onOk={() => {
-          if (canImpersonate && loginTarget && !signingIn) void signInAsUser(loginTarget.id);
+          if (canManageUserAccount && loginTarget && !signingIn) void signInAsUser(loginTarget.id);
         }}
         onCancel={() => {
           if (!signingIn) setLoginTarget(null);
@@ -223,7 +241,7 @@ export function UsersPage() {
         key={`${activeUserId ?? "closed"}:${workspaceFilter ?? "all"}`}
         userId={activeUserId}
         initialWorkspaceId={workspaceFilter}
-        canViewCanvases={canImpersonate}
+        canViewCanvases={canManageUserAccount}
         onClose={() => selectUser(null)}
       />
     </>

@@ -10,3 +10,7 @@ export function fetchAdminSession(): Promise<AdminSession> {
 export function startUserImpersonation(userId: number) {
   return http.post<{ code: string }>(`/admin/users/${userId}/impersonation`, { mode: 'account' })
 }
+
+export function rebindUserMobile(userId: number, expectedMobile: string, mobile: string) {
+  return http.put<null>(`/admin/users/${userId}/mobile`, { expected_mobile: expectedMobile, mobile })
+}
